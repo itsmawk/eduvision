@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [user, setUser] = useState({ email: "", password: "" }); // ✅ Changed "identifier" to "email"
+  const [user, setUser] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
