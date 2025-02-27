@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Drawer, List, ListItemButton, ListItemIcon, ListItemText, CssBaseline, Box, Toolbar } from "@mui/material";
 import { Dashboard, People } from "@mui/icons-material";
-import AdminHeader from "../components/AdminHeader";
+import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
 
@@ -13,7 +13,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard" },
-    { text: "Faculty", icon: <People />, path: "/faculty" },
+    { text: "Faculty", icon: <People />, path: "/faculty-info" },
   ];
 
   const handleNavigate = (path: string) => {
@@ -65,7 +65,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
-        {children} {/* This will load the dashboard or other pages dynamically */}
+        {children}
       </Box>
     </Box>
   );

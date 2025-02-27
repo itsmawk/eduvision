@@ -1,12 +1,12 @@
 import React from "react";
 import { Typography } from "@mui/material";
-import AdminMain from "../pages/AdminMain"; // Import the layout wrapper
+import AdminMain from "./AdminMain";
 
-const Dashboard: React.FC = () => {
+const FacultyInfo: React.FC = () => {
   return (
     <AdminMain>
       <Typography variant="h4" fontWeight="bold" color="#333">
-        Welcome to EduVision Dashboard
+        Welcome to Faculty Info
       </Typography>
       <Typography variant="body1" color="text.secondary">
         Manage faculty attendance and system settings here.
@@ -15,4 +15,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default FacultyInfo;
