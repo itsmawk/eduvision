@@ -16,35 +16,44 @@ export default function Login() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", user);
+        const res = await axios.post("http://localhost:5000/api/auth/login", user);
 
-      localStorage.setItem("token", res.data.token);
+        localStorage.setItem("token", res.data.token);
 
-      Swal.fire({
-        icon: "success",
-        title: "Login Successful!",
-        text: "You are now logged in.",
-        confirmButtonColor: "steelblue",
-      });
+        const faculty = res.data.faculty;
+        if (!faculty) throw new Error("Invalid faculty data received.");
 
-      navigate("/dashboard"); // ✅ Redirect only after successful login
+        const { first_name, middle_name, last_name } = faculty;
+
+        Swal.fire({
+            icon: "success",
+            title: `Welcome ${last_name}, ${first_name} ${middle_name ? middle_name : ""}`.trim(),
+            showConfirmButton: false,
+            timer: 2000,
+        });
+
+        setTimeout(() => {
+            navigate("/dashboard");
+        }, 2000);
+
     } catch (error) {
-      let errorMessage = "Invalid Credentials";
+        let errorMessage = "Invalid Credentials";
 
-      if (axios.isAxiosError(error)) {
-        errorMessage = error.response?.data?.message || "Invalid Credentials";
-      }
+        if (axios.isAxiosError(error)) {
+            errorMessage = error.response?.data?.message || "Invalid Credentials";
+        }
 
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: errorMessage,
-        confirmButtonColor: "steelblue",
-      });
+        Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: errorMessage,
+            confirmButtonColor: "steelblue",
+        });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
 
   return (
     <Container maxWidth="xs" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>

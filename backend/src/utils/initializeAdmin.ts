@@ -12,6 +12,9 @@ const initializeAdmin = async () => {
 
       const hashedPassword = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD!, 10);
       const admin: IFaculty = new Faculty({
+        first_name: process.env.DEFAULT_ADMIN_FIRST_NAME,
+        middle_name: process.env.DEFAULT_ADMIN_MIDDLE_NAME,
+        last_name: process.env.DEFAULT_ADMIN_LAST_NAME,
         email: process.env.DEFAULT_ADMIN_EMAIL!,
         password: hashedPassword,
         role: 'admin',

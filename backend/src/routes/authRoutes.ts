@@ -31,12 +31,19 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       token,
-      faculty: { id: faculty._id, role: faculty.role },
+      faculty: {
+        id: faculty._id,
+        role: faculty.role,
+        first_name: faculty.first_name,
+        middle_name: faculty.middle_name,
+        last_name: faculty.last_name,
+      },
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 export default router;
