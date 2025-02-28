@@ -28,10 +28,10 @@ export default function Login() {
         timer: 2000,
       });
       
-      localStorage.setItem("facultyId", faculty.id); // Store faculty ID for navigation
+      localStorage.setItem("facultyId", faculty.id);
 
       setTimeout(() => {
-        navigate(`/dashboard/${faculty.id}`); // Navigate with Faculty ID
+        navigate(`/dashboard/${faculty.id}`);
       }, 2000);
       
     } catch (error) {

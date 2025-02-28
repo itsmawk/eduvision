@@ -45,6 +45,16 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const facultyList = await Faculty.find().select("first_name middle_name last_name email role");
+    res.json(facultyList);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
 export default router;

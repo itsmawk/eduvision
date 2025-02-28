@@ -17,14 +17,14 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const handleNavigate = (path: string) => {
-    const facultyId = localStorage.getItem("facultyId"); // Retrieve faculty ID from storage
+    const facultyId = localStorage.getItem("facultyId");
   
     if (!facultyId) {
       console.error("No faculty ID found!");
       return;
     }
   
-    const newPath = path.replace(":id", facultyId); // Replace :id with actual faculty ID
+    const newPath = path.replace(":id", facultyId);
     setActivePage(newPath);
     navigate(newPath);
   };
