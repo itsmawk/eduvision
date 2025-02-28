@@ -16,43 +16,42 @@ export default function Login() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-        const res = await axios.post("http://localhost:5000/api/auth/login", user);
+      const res = await axios.post("http://localhost:5000/api/auth/login", user);
+      
+      const { token, faculty } = res.data;
+      localStorage.setItem("token", token);
+  
+      Swal.fire({
+        icon: "success",
+        title: `Welcome ${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name ? faculty.middle_name : ""}`.trim(),
+        showConfirmButton: false,
+        timer: 2000,
+      });
+      
+      localStorage.setItem("facultyId", faculty.id); // Store faculty ID for navigation
 
-        localStorage.setItem("token", res.data.token);
-
-        const faculty = res.data.faculty;
-        if (!faculty) throw new Error("Invalid faculty data received.");
-
-        const { first_name, middle_name, last_name } = faculty;
-
-        Swal.fire({
-            icon: "success",
-            title: `Welcome ${last_name}, ${first_name} ${middle_name ? middle_name : ""}`.trim(),
-            showConfirmButton: false,
-            timer: 2000,
-        });
-
-        setTimeout(() => {
-            navigate("/dashboard");
-        }, 2000);
-
+      setTimeout(() => {
+        navigate(`/dashboard/${faculty.id}`); // Navigate with Faculty ID
+      }, 2000);
+      
     } catch (error) {
-        let errorMessage = "Invalid Credentials";
-
-        if (axios.isAxiosError(error)) {
-            errorMessage = error.response?.data?.message || "Invalid Credentials";
-        }
-
-        Swal.fire({
-            icon: "error",
-            title: "Oops...",
-            text: errorMessage,
-            confirmButtonColor: "steelblue",
-        });
+      let errorMessage = "Invalid Credentials";
+  
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || "Invalid Credentials";
+      }
+  
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: errorMessage,
+        confirmButtonColor: "steelblue",
+      });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
+  
 
 
   return (

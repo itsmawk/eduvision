@@ -9,27 +9,30 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/login" element={<Login />} />
+  <Route path="/" element={<Navigate to="/login" replace />} />
+  <Route path="/signup" element={<SignUp />} />
+  <Route path="/login" element={<Login />} />
+  
+  {/* Modify Dashboard Route to accept Faculty ID */}
+  <Route
+    path="/dashboard/:id"
+    element={
+      <AdminMain>
+        <Dashboard />
+      </AdminMain>
+    }
+  />
 
-        <Route
-          path="/dashboard"
-          element={
-            <AdminMain>
-              <Dashboard />
-            </AdminMain>
-          }
-        />
-        <Route
-          path="/faculty-info"
-          element={
-            <AdminMain>
-              <FacultyInfo />
-            </AdminMain>
-          }
-        />
-      </Routes>
+  <Route
+    path="/faculty-info/:id"
+    element={
+      <AdminMain>
+        <FacultyInfo />
+      </AdminMain>
+    }
+  />
+</Routes>
+
     </Router>
   );
 }

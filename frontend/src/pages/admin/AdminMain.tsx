@@ -12,14 +12,23 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState(location.pathname);
 
   const menuItems = [
-    { text: "Dashboard", icon: <Dashboard />, path: "/dashboard" },
-    { text: "Faculty", icon: <People />, path: "/faculty-info" },
+    { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
+    { text: "Faculty", icon: <People />, path: "/faculty-info/:id" },
   ];
 
   const handleNavigate = (path: string) => {
-    setActivePage(path);
-    navigate(path);
+    const facultyId = localStorage.getItem("facultyId"); // Retrieve faculty ID from storage
+  
+    if (!facultyId) {
+      console.error("No faculty ID found!");
+      return;
+    }
+  
+    const newPath = path.replace(":id", facultyId); // Replace :id with actual faculty ID
+    setActivePage(newPath);
+    navigate(newPath);
   };
+  
 
   return (
     <Box sx={{ display: "flex", backgroundColor: "#f4f6f8", minHeight: "100vh" }}>
