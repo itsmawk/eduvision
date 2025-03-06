@@ -18,7 +18,7 @@ const AdminHeader: React.FC = () => {
       confirmButtonText: "Yes, log out",
     }).then((result) => {
       if (result.isConfirmed) {
-        navigate("/"); // Redirect to login page
+        navigate("/");
       }
     });
   };

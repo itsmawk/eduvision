@@ -72,10 +72,11 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar />
-        {children}
-      </Box>
+      <Box component="main" sx={{ flexGrow: 1, pl: 1, pr: 3, pt: 3, pb: 3 }}>
+  <Toolbar />
+  {children}
+</Box>
+
     </Box>
   );
 };
