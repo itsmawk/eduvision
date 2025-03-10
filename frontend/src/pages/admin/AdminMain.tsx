@@ -38,7 +38,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Drawer
         variant="permanent"
         sx={{
-          width: drawerWidth,
+          width: drawerWidth - 100,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
