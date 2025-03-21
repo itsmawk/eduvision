@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Drawer, List, ListItemButton, ListItemIcon, ListItemText, CssBaseline, Box, Toolbar } from "@mui/material";
-import { Dashboard, People } from "@mui/icons-material";
+import {
+  Drawer, List, ListItemButton, ListItemIcon, ListItemText,
+  CssBaseline, Box, Toolbar
+} from "@mui/material";
+import { Dashboard, People, Videocam } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
@@ -14,21 +17,19 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
     { text: "Faculty", icon: <People />, path: "/faculty-info/:id" },
+    { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];
 
   const handleNavigate = (path: string) => {
     const facultyId = localStorage.getItem("facultyId");
-  
     if (!facultyId) {
       console.error("No faculty ID found!");
       return;
     }
-  
     const newPath = path.replace(":id", facultyId);
     setActivePage(newPath);
     navigate(newPath);
   };
-  
 
   return (
     <Box sx={{ display: "flex", backgroundColor: "#f4f6f8", minHeight: "100vh" }}>
@@ -72,11 +73,10 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, pl: 1, pr: 3, pt: 3, pb: 3 }}>
-  <Toolbar />
-  {children}
-</Box>
-
+      <Box component="main" sx={{ flexGrow: 1, pl: 1, pr: 3, pb: 3 }}>
+        <Toolbar />
+        {children}
+      </Box>
     </Box>
   );
 };

@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import AdminMain from "./pages/admin/AdminMain";
 import Dashboard from "./pages/admin/Dashboard";
 import FacultyInfo from "./pages/admin/FacultyInfo";
+import LiveVideo from "./pages/admin/LiveVideo";
 
 export default function App() {
   return (
@@ -13,7 +14,6 @@ export default function App() {
   <Route path="/signup" element={<SignUp />} />
   <Route path="/login" element={<Login />} />
   
-  {/* Modify Dashboard Route to accept Faculty ID */}
   <Route
     path="/dashboard/:id"
     element={
@@ -28,6 +28,15 @@ export default function App() {
     element={
       <AdminMain>
         <FacultyInfo />
+      </AdminMain>
+    }
+  />
+
+<Route
+    path="/live-video/:id"
+    element={
+      <AdminMain>
+        <LiveVideo />
       </AdminMain>
     }
   />
