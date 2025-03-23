@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
-  CssBaseline, Box, Toolbar
+  CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
-import { Dashboard, People, Videocam } from "@mui/icons-material";
+import { Dashboard, People, Videocam, CalendarToday } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
@@ -16,7 +16,8 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
-    { text: "Faculty", icon: <People />, path: "/faculty-info/:id" },
+    { text: "Faculty Info", icon: <People />, path: "/faculty-info/:id" },
+    { text: "Schedule", icon: <CalendarToday />, path: "/schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];
 
@@ -52,23 +53,44 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <Toolbar />
         <List>
           {menuItems.map((item) => (
-            <ListItemButton
-              key={item.text}
-              onClick={() => handleNavigate(item.path)}
-              sx={{
-                color: activePage === item.path ? "#1e88e5" : "#ffffff",
-                backgroundColor: activePage === item.path ? "rgba(30,136,229,0.2)" : "transparent",
-                borderRadius: "10px",
-                mx: 2,
-                my: 1,
-                "&:hover": { backgroundColor: "rgba(30,136,229,0.3)" },
-              }}
-            >
-              <ListItemIcon sx={{ color: activePage === item.path ? "#1e88e5" : "#ffffff" }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
+            <React.Fragment key={item.text}>
+              {item.text === "Faculty Info" && (
+                <>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      color: "#ffffff",
+                      textTransform: "uppercase",
+                      fontWeight: "bold",
+                      ml: 3,
+                      mt: 2,
+                      mb: 1,
+                      opacity: 0.7,
+                    }}
+                  >
+                    Faculty
+                  </Typography>
+                  <Divider sx={{ backgroundColor: "rgba(255,255,255,0.2)", mx: 2, mb: 1 }} />
+                </>
+              )}
+
+              <ListItemButton
+                onClick={() => handleNavigate(item.path)}
+                sx={{
+                  color: activePage === item.path ? "#1e88e5" : "#ffffff",
+                  backgroundColor: activePage === item.path ? "rgba(30,136,229,0.2)" : "transparent",
+                  borderRadius: "10px",
+                  mx: 2,
+                  my: 1,
+                  "&:hover": { backgroundColor: "rgba(30,136,229,0.3)" },
+                }}
+              >
+                <ListItemIcon sx={{ color: activePage === item.path ? "#1e88e5" : "#ffffff" }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </React.Fragment>
           ))}
         </List>
       </Drawer>
