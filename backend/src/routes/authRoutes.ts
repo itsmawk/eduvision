@@ -32,7 +32,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     res.json({
       token,
       faculty: {
-        id: faculty._id, // Ensure _id is included
+        id: faculty._id,
         role: faculty.role,
         first_name: faculty.first_name,
         middle_name: faculty.middle_name,
@@ -55,6 +55,72 @@ router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
 
+    const faculty = await Faculty.findById(id);
+    if (!faculty) {
+      res.status(404).json({ message: "Faculty not found" });
+      return;
+    }
+
+    await Faculty.findByIdAndDelete(id);
+    res.json({ message: "Faculty account deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
+  console.log(req.body);
+  try {
+    const { last_name, first_name, middle_name, email, password, role } = req.body;
+
+    if (!last_name || !first_name || !email || !password || !role) {
+      res.status(400).json({ message: "Please provide all required fields, including role" });
+      return;
+    }
+
+    const validRoles = ["admin", "instructor"];
+    if (!validRoles.includes(role)) {
+      res.status(400).json({ message: "Invalid role. Role must be 'Admin' or 'Instructor'." });
+      return;
+    }
+
+    const existingFaculty = await Faculty.findOne({ email });
+    if (existingFaculty) {
+      res.status(400).json({ message: "Email already exists" });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newFaculty = new Faculty({
+      last_name,
+      first_name,
+      middle_name: middle_name || "",
+      email,
+      password: hashedPassword,
+      role,
+    });
+
+    await newFaculty.save();
+
+    res.status(201).json({
+      _id: newFaculty._id,
+      last_name: newFaculty.last_name,
+      first_name: newFaculty.first_name,
+      middle_name: newFaculty.middle_name,
+      email: newFaculty.email,
+      role: newFaculty.role,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 export default router;
