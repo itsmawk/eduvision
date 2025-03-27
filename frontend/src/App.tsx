@@ -5,6 +5,8 @@ import AdminMain from "./pages/admin/AdminMain";
 import Dashboard from "./pages/admin/Dashboard";
 import FacultyInfo from "./pages/admin/FacultyInfo";
 import LiveVideo from "./pages/admin/LiveVideo";
+import Schedule from "./pages/admin/Schedule";
+
 
 export default function App() {
   return (
@@ -40,6 +42,16 @@ export default function App() {
       </AdminMain>
     }
   />
+
+<Route
+    path="/schedule/:id"
+    element={
+      <AdminMain>
+        <Schedule />
+      </AdminMain>
+    }
+  />
+
 </Routes>
 
     </Router>
