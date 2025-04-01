@@ -31,6 +31,7 @@ interface Faculty {
   first_name: string;
   middle_name?: string;
   last_name: string;
+  username:string;
   email: string;
   role: string;
 }
@@ -43,9 +44,10 @@ const FacultyInfo: React.FC = () => {
     last_name: "",
     first_name: "",
     middle_name: "",
+    username: "",
     email: "",
     password: "",
-    role: "instructor", // Default role is "instructor"
+    role: "instructor",
   });
 
   useEffect(() => {
@@ -65,22 +67,19 @@ const FacultyInfo: React.FC = () => {
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    setNewFaculty({ last_name: "", first_name: "", middle_name: "", email: "", password: "", role: "instructor" });
+    setNewFaculty({ last_name: "", first_name: "", middle_name: "", username: "",email: "", password: "", role: "instructor" });
   };
 
-  // For TextFields
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewFaculty((prev) => ({ ...prev, [name]: value }));
   };
 
-  // For the role dropdown
   const handleRoleChange = (event: SelectChangeEvent<string>) => {
     setNewFaculty((prev) => ({ ...prev, role: event.target.value }));
   };
 
   const handleAddAccount = async () => {
-    // Validate required fields
     if (
       !newFaculty.last_name.trim() ||
       !newFaculty.first_name.trim() ||
@@ -150,7 +149,6 @@ const FacultyInfo: React.FC = () => {
       </Typography>
 
       <Grid container spacing={2}>
-        {/* Table */}
         <Grid item xs={8}>
           <TableContainer component={Paper}>
             <Table>
@@ -193,7 +191,6 @@ const FacultyInfo: React.FC = () => {
           </TableContainer>
         </Grid>
 
-        {/* Action Buttons */}
         <Grid item xs={4}>
           <Paper sx={{ padding: 3, display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
             <Typography variant="h6" fontWeight="bold" mb={2}>
@@ -210,7 +207,6 @@ const FacultyInfo: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Add Faculty Modal */}
       <Dialog open={openModal} onClose={handleCloseModal}>
         <DialogTitle>Add Faculty Account</DialogTitle>
         <DialogContent>
@@ -240,6 +236,14 @@ const FacultyInfo: React.FC = () => {
           />
           <TextField 
             fullWidth 
+            label="Username" 
+            name="username" 
+            value={newFaculty.username} 
+            onChange={handleInputChange} 
+            margin="dense" 
+          />
+          <TextField 
+            fullWidth 
             label="Email" 
             name="email" 
             value={newFaculty.email} 
@@ -255,7 +259,6 @@ const FacultyInfo: React.FC = () => {
             onChange={handleInputChange} 
             margin="dense" 
           />
-          {/* Role Dropdown */}
           <FormControl fullWidth margin="dense">
             <InputLabel>Role</InputLabel>
             <Select name="role" value={newFaculty.role} onChange={handleRoleChange}>

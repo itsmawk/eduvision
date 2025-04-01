@@ -11,10 +11,7 @@ import {
   Select, 
   MenuItem, 
   SelectChangeEvent, 
-  IconButton, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent 
+  IconButton 
 } from "@mui/material";
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -28,8 +25,8 @@ import AdminMain from "./AdminMain";
 const Schedule: React.FC = () => {
   const [calendarView, setCalendarView] = useState<string>("dayGridMonth");
   const [currentTitle, setCurrentTitle] = useState<string>("");
-  const [openDateDialog, setOpenDateDialog] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(dayjs());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const calendarRef = useRef<any>(null);
 
   const handleViewChange = (event: SelectChangeEvent<string>) => {
@@ -52,21 +49,16 @@ const Schedule: React.FC = () => {
     setCurrentTitle(calendarApi.view.title);
   };
 
-  const handleOpenDateDialog = () => {
-    setOpenDateDialog(true);
-  };
-
-  const handleCloseDateDialog = () => {
-    setOpenDateDialog(false);
-  };
-
+  // When a date is selected, update calendar view and force calendar to update its size.
   const handleDateSelect = (date: Dayjs | null) => {
     if (date) {
       setSelectedDate(date);
       const calendarApi = calendarRef.current.getApi();
-      calendarApi.gotoDate(date.format("YYYY-MM-DD")); // Navigate calendar to selected date
-      setOpenDateDialog(false); // Close the dialog
+      calendarApi.gotoDate(date.format("YYYY-MM-DD"));
+      setCurrentTitle(calendarApi.view.title);
+      calendarApi.updateSize(); // Force reflow
     }
+    setShowDatePicker(false);
   };
 
   useEffect(() => {
@@ -78,11 +70,30 @@ const Schedule: React.FC = () => {
     <AdminMain>
       {/* Header Section */}
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        <Typography variant="h6" sx={{ flexGrow: 1, textAlign: "left", display: "flex", alignItems: "center" }}>
+        <Typography
+          variant="h6"
+          sx={{
+            flexGrow: 1,
+            textAlign: "left",
+            display: "flex",
+            alignItems: "center"
+          }}
+        >
           {currentTitle}
-          <IconButton color="primary" sx={{ ml: 1 }} onClick={handleOpenDateDialog}>
+          <IconButton color="primary" sx={{ ml: 1 }} onClick={() => setShowDatePicker(!showDatePicker)}>
             <CalendarTodayIcon />
           </IconButton>
+          {showDatePicker && (
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                value={selectedDate}
+                onChange={handleDateSelect}
+                views={["year", "month", "day"]}
+                slotProps={{ textField: { size: "small" } }}
+                sx={{ ml: 1 }}
+              />
+            </LocalizationProvider>
+          )}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <IconButton onClick={handlePrev} color="primary">
@@ -107,34 +118,22 @@ const Schedule: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Calendar */}
+      {/* Calendar Container */}
       <Box sx={{ marginTop: "20px" }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={calendarView}
-          headerToolbar={false}
+          headerToolbar={false} // Hide FullCalendar's default header
           events={[
             { title: "Meeting", start: "2023-03-10" },
             { title: "Conference", start: "2023-03-15", end: "2023-03-17" },
           ]}
+          dateClick={(arg) => {
+            alert("Date clicked: " + arg.dateStr);
+          }}
         />
       </Box>
-
-      {/* Date Picker Dialog */}
-      <Dialog open={openDateDialog} onClose={handleCloseDateDialog}>
-        <DialogTitle>Select Date</DialogTitle>
-        <DialogContent>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              value={selectedDate}
-              onChange={handleDateSelect}
-              views={["year", "month", "day"]}
-              sx={{ mt: 2, width: "100%" }}
-            />
-          </LocalizationProvider>
-        </DialogContent>
-      </Dialog>
     </AdminMain>
   );
 };

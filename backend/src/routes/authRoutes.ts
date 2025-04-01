@@ -76,9 +76,9 @@ router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void>
 router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
   console.log(req.body);
   try {
-    const { last_name, first_name, middle_name, email, password, role } = req.body;
+    const { last_name, first_name, middle_name, email, username, password, role } = req.body;
 
-    if (!last_name || !first_name || !email || !password || !role) {
+    if (!last_name || !first_name || !username || !email || !password || !role) {
       res.status(400).json({ message: "Please provide all required fields, including role" });
       return;
     }
@@ -95,6 +95,12 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const existingFacultyUsername = await Faculty.findOne({ username });
+    if (existingFacultyUsername) {
+      res.status(400).json({ message: "Username already exists" });
+      return;
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -102,6 +108,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       last_name,
       first_name,
       middle_name: middle_name || "",
+      username,
       email,
       password: hashedPassword,
       role,
@@ -114,6 +121,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       last_name: newFaculty.last_name,
       first_name: newFaculty.first_name,
       middle_name: newFaculty.middle_name,
+      username: newFaculty.username,
       email: newFaculty.email,
       role: newFaculty.role,
     });
