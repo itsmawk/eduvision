@@ -63,7 +63,22 @@ const FacultyInfo: React.FC = () => {
     fetchFaculty();
   }, []);
 
-  const handleOpenModal = () => setOpenModal(true);
+  const generate4DigitPassword = (): string => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+
+  const handleOpenModal = () => {
+    setNewFaculty({
+      last_name: "",
+      first_name: "",
+      middle_name: "",
+      username: "",
+      email: "",
+      password: generate4DigitPassword(),
+      role: "instructor",
+    });
+    setOpenModal(true);
+  };
 
   const handleCloseModal = () => {
     setOpenModal(false);

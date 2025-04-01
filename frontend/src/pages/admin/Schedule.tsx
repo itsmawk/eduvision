@@ -49,14 +49,13 @@ const Schedule: React.FC = () => {
     setCurrentTitle(calendarApi.view.title);
   };
 
-  // When a date is selected, update calendar view and force calendar to update its size.
   const handleDateSelect = (date: Dayjs | null) => {
     if (date) {
       setSelectedDate(date);
       const calendarApi = calendarRef.current.getApi();
       calendarApi.gotoDate(date.format("YYYY-MM-DD"));
       setCurrentTitle(calendarApi.view.title);
-      calendarApi.updateSize(); // Force reflow
+      calendarApi.updateSize();
     }
     setShowDatePicker(false);
   };
@@ -68,7 +67,6 @@ const Schedule: React.FC = () => {
 
   return (
     <AdminMain>
-      {/* Header Section */}
       <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
         <Typography
           variant="h6"
@@ -118,13 +116,12 @@ const Schedule: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Calendar Container */}
       <Box sx={{ marginTop: "20px" }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={calendarView}
-          headerToolbar={false} // Hide FullCalendar's default header
+          headerToolbar={false}
           events={[
             { title: "Meeting", start: "2023-03-10" },
             { title: "Conference", start: "2023-03-15", end: "2023-03-17" },
