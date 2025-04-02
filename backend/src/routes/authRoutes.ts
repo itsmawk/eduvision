@@ -7,11 +7,12 @@ import dotenv from "dotenv";
 dotenv.config();
 const router = express.Router();
 
+// LOGIN ROUTE
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    const faculty = await Faculty.findOne({ email });
+    const faculty = await Faculty.findOne({ username });
     if (!faculty) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
@@ -37,7 +38,9 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
         first_name: faculty.first_name,
         middle_name: faculty.middle_name,
         last_name: faculty.last_name,
+        status: faculty.status,
       },
+      requiresUpdate: faculty.status === "temporary",
     });
   } catch (error) {
     console.error(error);
@@ -45,6 +48,40 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// UPDATE CREDENTIALS ROUTE
+router.put("/update-credentials/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { username, password } = req.body;
+
+    const faculty = await Faculty.findById(id);
+    if (!faculty) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const existingUser = await Faculty.findOne({ username, _id: { $ne: id } });
+    if (existingUser) {
+      res.status(400).json({ message: "Username is already taken" });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    faculty.username = username;
+    faculty.password = hashedPassword;
+    faculty.status = "permanent";
+
+    await faculty.save();
+
+    res.json({ message: "Credentials updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET FACULTY LIST
 router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   try {
     const facultyList = await Faculty.find().select("first_name middle_name last_name username email role status");
@@ -55,6 +92,7 @@ router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// DELETE FACULTY ACCOUNT
 router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
@@ -73,10 +111,11 @@ router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void>
   }
 });
 
+// CREATE NEW FACULTY ACCOUNT
 router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
   console.log(req.body);
   try {
-    const { last_name, first_name, middle_name, email, username, password, role, status } = req.body;
+    const { last_name, first_name, middle_name, email, username, password, role } = req.body;
 
     if (!last_name || !first_name || !username || !email || !password || !role) {
       res.status(400).json({ message: "Please provide all required fields, including role" });

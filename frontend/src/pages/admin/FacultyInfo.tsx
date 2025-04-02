@@ -76,7 +76,7 @@ const FacultyInfo: React.FC = () => {
     fetchFaculty();
   }, []);
 
-  const generate4DigitPassword = (): string => {
+  const random4Digit = (): string => {
     return Math.floor(1000 + Math.random() * 9000).toString();
   };
 
@@ -85,9 +85,9 @@ const FacultyInfo: React.FC = () => {
       last_name: "",
       first_name: "",
       middle_name: "",
-      username: "",
+      username: random4Digit(),
       email: "",
-      password: generate4DigitPassword(),
+      password: random4Digit(),
       role: "instructor",
     });
     setOpenModal(true);
@@ -274,6 +274,7 @@ const FacultyInfo: React.FC = () => {
             onChange={handleInputChange} 
             margin="dense" 
             InputProps={{
+              readOnly: true,
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={togglePasswordVisibility} edge="end">

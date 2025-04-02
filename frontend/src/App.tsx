@@ -6,54 +6,68 @@ import Dashboard from "./pages/admin/Dashboard";
 import FacultyInfo from "./pages/admin/FacultyInfo";
 import LiveVideo from "./pages/admin/LiveVideo";
 import Schedule from "./pages/admin/Schedule";
+import UserMain from "./pages/user/UserMain";
+import UpdateCredentials from "./pages/user/UpdateCredentials";
+import UserDashboard from "./pages/user/UserDashboard";
 
 
 export default function App() {
   return (
     <Router>
       <Routes>
-  <Route path="/" element={<Navigate to="/login" replace />} />
-  <Route path="/signup" element={<SignUp />} />
-  <Route path="/login" element={<Login />} />
-  
-  <Route
-    path="/dashboard/:id"
-    element={
-      <AdminMain>
-        <Dashboard />
-      </AdminMain>
-    }
-  />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login />} />
 
-  <Route
-    path="/faculty-info/:id"
-    element={
-      <AdminMain>
-        <FacultyInfo />
-      </AdminMain>
-    }
-  />
+        <Route path="/update-credentials/:id" element={<UpdateCredentials />} />
 
-<Route
-    path="/live-video/:id"
-    element={
-      <AdminMain>
-        <LiveVideo />
-      </AdminMain>
-    }
-  />
+        {/* User Routes */}
+        <Route
+          path="/user-dashboard/:id"
+          element={
+            <UserMain>
+              <UserDashboard />
+            </UserMain>
+          }
+        />
 
-<Route
-    path="/schedule/:id"
-    element={
-      <AdminMain>
-        <Schedule />
-      </AdminMain>
-    }
-  />
+        {/* Admin Routes */}
+        <Route
+          path="/dashboard/:id"
+          element={
+            <AdminMain>
+              <Dashboard />
+            </AdminMain>
+          }
+        />
 
-</Routes>
+        <Route
+          path="/faculty-info/:id"
+          element={
+            <AdminMain>
+              <FacultyInfo />
+            </AdminMain>
+          }
+        />
 
+        <Route
+          path="/live-video/:id"
+          element={
+            <AdminMain>
+              <LiveVideo />
+            </AdminMain>
+          }
+        />
+
+        <Route
+          path="/schedule/:id"
+          element={
+            <AdminMain>
+              <Schedule />
+            </AdminMain>
+          }
+        />
+      </Routes>
     </Router>
   );
 }

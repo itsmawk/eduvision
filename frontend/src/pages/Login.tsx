@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [user, setUser] = useState({ email: "", password: "" });
+  const [user, setUser] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -18,8 +18,9 @@ export default function Login() {
     try {
       const res = await axios.post("http://localhost:5000/api/auth/login", user);
       
-      const { token, faculty } = res.data;
+      const { token, faculty, requiresUpdate } = res.data;
       localStorage.setItem("token", token);
+      localStorage.setItem("facultyId", faculty.id);
   
       Swal.fire({
         icon: "success",
@@ -27,12 +28,12 @@ export default function Login() {
         showConfirmButton: false,
         timer: 2000,
       });
-      
-      localStorage.setItem("facultyId", faculty.id);
-
-      setTimeout(() => {
+  
+      if (requiresUpdate) {
+        navigate(`/update-credentials/${faculty.id}`);
+      } else {
         navigate(`/dashboard/${faculty.id}`);
-      }, 2000);
+      }      
       
     } catch (error) {
       let errorMessage = "Invalid Credentials";
@@ -51,6 +52,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+  
 
   return (
     <Container maxWidth="xs" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
@@ -64,8 +66,8 @@ export default function Login() {
           </Typography>
           <Box component="form" sx={{ mt: 2 }}>
             <TextField 
-              label="Email" 
-              name="email" 
+              label="Username" 
+              name="username" 
               fullWidth 
               margin="normal" 
               variant="outlined" 
