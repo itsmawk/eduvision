@@ -11,6 +11,7 @@ export interface IFaculty extends Document {
   email: string;
   password: string;
   role: FacultyRole;
+  status: string;
 }
 
 const FacultySchema: Schema = new Schema({
@@ -21,6 +22,7 @@ const FacultySchema: Schema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'instructor'], required: true },
+  status: { type: String, enum: ['temporary', 'permanent'], default: 'temporary' }
 });
 
 export default mongoose.model<IFaculty>('Faculty', FacultySchema);

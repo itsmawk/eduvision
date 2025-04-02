@@ -2,7 +2,12 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import AdminMain from "./AdminMain";
 import Swal from "sweetalert2";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 import {
+  Box,
   Typography,
   Table,
   TableBody,
@@ -13,11 +18,12 @@ import {
   Paper,
   Button,
   Grid,
-  Divider,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
+  InputAdornment,
   TextField,
   Select,
   MenuItem,
@@ -31,9 +37,11 @@ interface Faculty {
   first_name: string;
   middle_name?: string;
   last_name: string;
-  username:string;
+  username: string;
   email: string;
+  password: string;
   role: string;
+  status: string;
 }
 
 const FacultyInfo: React.FC = () => {
@@ -49,6 +57,11 @@ const FacultyInfo: React.FC = () => {
     password: "",
     role: "instructor",
   });
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev);
+  };
 
   useEffect(() => {
     const fetchFaculty = async () => {
@@ -82,7 +95,7 @@ const FacultyInfo: React.FC = () => {
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    setNewFaculty({ last_name: "", first_name: "", middle_name: "", username: "",email: "", password: "", role: "instructor" });
+    setNewFaculty({ last_name: "", first_name: "", middle_name: "", username: "", email: "", password: "", role: "instructor" });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,16 +129,7 @@ const FacultyInfo: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!selectedFaculty) {
-      Swal.fire({
-        icon: "warning",
-        title: "No Faculty Selected",
-        text: "Please select a faculty to delete.",
-      });
-      return;
-    }
-
+  const handleDeleteAccount = async (id: string) => {
     const confirmation = await Swal.fire({
       title: "Are you sure?",
       text: "This action cannot be undone!",
@@ -138,9 +142,11 @@ const FacultyInfo: React.FC = () => {
 
     if (confirmation.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:5000/api/auth/faculty/${selectedFaculty}`);
-        setFacultyList(facultyList.filter((faculty) => faculty._id !== selectedFaculty));
-        setSelectedFaculty(null);
+        await axios.delete(`http://localhost:5000/api/auth/faculty/${id}`);
+        setFacultyList(facultyList.filter((faculty) => faculty._id !== id));
+        if (selectedFaculty === id) {
+          setSelectedFaculty(null);
+        }
         Swal.fire({
           icon: "success",
           title: "Deleted!",
@@ -159,27 +165,33 @@ const FacultyInfo: React.FC = () => {
 
   return (
     <AdminMain>
-      <Typography variant="h4" fontWeight="bold" color="#333" gutterBottom>
-        Faculty Information
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Typography variant="h4" fontWeight="bold" color="#333" gutterBottom>
+          Faculty Information
+        </Typography>
+        <IconButton color="primary" onClick={handleOpenModal}>
+          <AddIcon />
+        </IconButton>
+      </Box>
 
       <Grid container spacing={2}>
-        <Grid item xs={8}>
-          <TableContainer component={Paper}>
+        <Grid item xs={12}>
+          <TableContainer component={Paper} sx={{ width: "100%" }}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell><strong>Full Name</strong></TableCell>
+                  <TableCell><strong>Username</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
                   <TableCell><strong>Role</strong></TableCell>
-                  <TableCell><strong>Select</strong></TableCell>
+                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell><strong>Action</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {facultyList.map((faculty) => (
                   <TableRow 
-                    key={faculty._id} 
-                    onClick={() => setSelectedFaculty(faculty._id)}
+                    key={faculty._id}
                     sx={{
                       backgroundColor: selectedFaculty === faculty._id ? "#e0f7fa" : "transparent",
                       cursor: "pointer",
@@ -189,15 +201,17 @@ const FacultyInfo: React.FC = () => {
                     <TableCell>
                       {`${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name ? faculty.middle_name : ""}`}
                     </TableCell>
+                    <TableCell>{faculty.username}</TableCell>
                     <TableCell>{faculty.email}</TableCell>
-                    <TableCell>{faculty.role}</TableCell>
+                    <TableCell>{faculty.role.charAt(0).toUpperCase() + faculty.role.slice(1)}</TableCell>
+                    <TableCell>{faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)}</TableCell>
                     <TableCell>
-                      <input 
-                        type="radio" 
-                        name="facultySelect" 
-                        checked={selectedFaculty === faculty._id} 
-                        onChange={() => setSelectedFaculty(faculty._id)} 
-                      />
+                      <IconButton 
+                        color="error" 
+                        onClick={() => handleDeleteAccount(faculty._id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -205,22 +219,8 @@ const FacultyInfo: React.FC = () => {
             </Table>
           </TableContainer>
         </Grid>
-
-        <Grid item xs={4}>
-          <Paper sx={{ padding: 3, display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
-            <Typography variant="h6" fontWeight="bold" mb={2}>
-              Actions
-            </Typography>
-            <Divider sx={{ width: "100%", mb: 2 }} />
-            <Button variant="contained" color="primary" fullWidth sx={{ mb: 2 }} onClick={handleOpenModal}>
-              Add Account
-            </Button>
-            <Button variant="contained" color="secondary" fullWidth disabled={!selectedFaculty} onClick={handleDeleteAccount}>
-              Delete Account
-            </Button>
-          </Paper>
-        </Grid>
       </Grid>
+
 
       <Dialog open={openModal} onClose={handleCloseModal}>
         <DialogTitle>Add Faculty Account</DialogTitle>
@@ -269,16 +269,25 @@ const FacultyInfo: React.FC = () => {
             fullWidth 
             label="Password" 
             name="password" 
-            type="password" 
+            type={showPassword ? "text" : "password"} 
             value={newFaculty.password} 
             onChange={handleInputChange} 
             margin="dense" 
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={togglePasswordVisibility} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }} 
           />
           <FormControl fullWidth margin="dense">
             <InputLabel>Role</InputLabel>
             <Select name="role" value={newFaculty.role} onChange={handleRoleChange}>
-              <MenuItem value="admin">Admin</MenuItem>
-              <MenuItem value="instructor">Instructor</MenuItem>
+              <MenuItem value="admin">admin</MenuItem>
+              <MenuItem value="instructor">instructor</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>

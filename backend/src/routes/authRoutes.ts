@@ -47,7 +47,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
 
 router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   try {
-    const facultyList = await Faculty.find().select("first_name middle_name last_name email role");
+    const facultyList = await Faculty.find().select("first_name middle_name last_name username email role status");
     res.json(facultyList);
   } catch (error) {
     console.error(error);
@@ -76,7 +76,7 @@ router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void>
 router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
   console.log(req.body);
   try {
-    const { last_name, first_name, middle_name, email, username, password, role } = req.body;
+    const { last_name, first_name, middle_name, email, username, password, role, status } = req.body;
 
     if (!last_name || !first_name || !username || !email || !password || !role) {
       res.status(400).json({ message: "Please provide all required fields, including role" });
@@ -112,6 +112,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       email,
       password: hashedPassword,
       role,
+      status: "temporary",
     });
 
     await newFaculty.save();
@@ -124,6 +125,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       username: newFaculty.username,
       email: newFaculty.email,
       role: newFaculty.role,
+      status: newFaculty.status,
     });
   } catch (error) {
     console.error(error);

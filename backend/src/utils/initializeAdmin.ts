@@ -15,6 +15,7 @@ const initializeAdmin = async () => {
         first_name: process.env.DEFAULT_ADMIN_FIRST_NAME,
         middle_name: process.env.DEFAULT_ADMIN_MIDDLE_NAME,
         last_name: process.env.DEFAULT_ADMIN_LAST_NAME,
+        username: process.env.DEFAULT_ADMIN_USERNAME!,
         email: process.env.DEFAULT_ADMIN_EMAIL!,
         password: hashedPassword,
         role: 'admin',
