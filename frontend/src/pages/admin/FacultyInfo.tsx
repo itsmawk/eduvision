@@ -163,12 +163,36 @@ const FacultyInfo: React.FC = () => {
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value.toLowerCase());
+  };
+
+  const filteredFacultyList = facultyList.filter((faculty) => {
+    const fullName = `${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name || ""}`.toLowerCase();
+    return (
+      fullName.includes(searchQuery) ||
+      faculty.username.toLowerCase().includes(searchQuery) ||
+      faculty.email.toLowerCase().includes(searchQuery)
+    );
+  });
+
+  
   return (
     <AdminMain>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Typography variant="h4" fontWeight="bold" color="#333" gutterBottom>
           Faculty Information
         </Typography>
+        <TextField
+          variant="outlined"
+          placeholder="Search faculty..."
+          size="small"
+          sx={{ mx: 2, width: "250px" }}
+          onChange={handleSearch}
+        />
+
         <IconButton color="primary" onClick={handleOpenModal}>
           <AddIcon />
         </IconButton>
@@ -189,7 +213,7 @@ const FacultyInfo: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {facultyList.map((faculty) => (
+                {filteredFacultyList.map((faculty) => (
                   <TableRow 
                     key={faculty._id}
                     sx={{
@@ -206,10 +230,7 @@ const FacultyInfo: React.FC = () => {
                     <TableCell>{faculty.role.charAt(0).toUpperCase() + faculty.role.slice(1)}</TableCell>
                     <TableCell>{faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)}</TableCell>
                     <TableCell>
-                      <IconButton 
-                        color="error" 
-                        onClick={() => handleDeleteAccount(faculty._id)}
-                      >
+                      <IconButton color="error" onClick={() => handleDeleteAccount(faculty._id)}>
                         <DeleteIcon />
                       </IconButton>
                     </TableCell>
