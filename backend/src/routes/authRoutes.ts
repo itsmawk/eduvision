@@ -172,4 +172,14 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+router.get("/instructors", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const instructors = await Faculty.find({ role: "instructor" }).select("first_name middle_name last_name");
+    res.json(instructors);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching instructors" });
+  }
+});
+
 export default router;
