@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import AdminMain from "./AdminMain";
 import Swal from "sweetalert2";
@@ -6,6 +6,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import { useFacultyContext } from "../../context/FacultyContext";
 import {
   Box,
   Typography,
@@ -32,20 +33,9 @@ import {
   SelectChangeEvent
 } from "@mui/material";
 
-interface Faculty {
-  _id: string;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-  username: string;
-  email: string;
-  password: string;
-  role: string;
-  status: string;
-}
 
 const FacultyInfo: React.FC = () => {
-  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
+  const { facultyList, setFacultyList } = useFacultyContext();
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
   const [newFaculty, setNewFaculty] = useState({
@@ -62,19 +52,6 @@ const FacultyInfo: React.FC = () => {
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
   };
-
-  useEffect(() => {
-    const fetchFaculty = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/auth/faculty");
-        setFacultyList(res.data);
-      } catch (error) {
-        console.error("Error fetching faculty data:", error);
-      }
-    };
-
-    fetchFaculty();
-  }, []);
 
   const random4Digit = (): string => {
     return Math.floor(1000 + Math.random() * 9000).toString();

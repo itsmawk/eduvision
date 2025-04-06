@@ -9,6 +9,7 @@ import Schedule from "./pages/admin/Schedule";
 import UserMain from "./pages/user/UserMain";
 import UpdateCredentials from "./pages/user/UpdateCredentials";
 import UserDashboard from "./pages/user/UserDashboard";
+import { FacultyProvider } from "./context/FacultyContext";
 
 
 export default function App() {
@@ -44,9 +45,11 @@ export default function App() {
         <Route
           path="/faculty-info/:id"
           element={
-            <AdminMain>
-              <FacultyInfo />
-            </AdminMain>
+            <FacultyProvider>
+              <AdminMain>
+                <FacultyInfo />
+              </AdminMain>
+            </FacultyProvider>
           }
         />
 
