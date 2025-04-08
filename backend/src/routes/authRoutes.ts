@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import Faculty from "../models/Faculty";
 import Schedule from "../models/Schedule";
 import Subject from "../models/Subject";
+import Room from "../models/Room";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -235,6 +236,17 @@ router.get("/subjects", async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching subjects" });
+  }
+});
+
+// GET ROOMS LIST
+router.get("/rooms", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const rooms = await Room.find().select("name");
+    res.json(rooms);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching rooms" });
   }
 });
 

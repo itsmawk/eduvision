@@ -48,6 +48,9 @@ const Schedule: React.FC = () => {
   const [endTime, setEndTime] = useState<Dayjs | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [labs, setLabs] = useState<any[]>([]);
+  const [allSchedules, setAllSchedules] = useState<any[]>([]);
+
 
 
   const handleOpenModal = async () => {
@@ -72,14 +75,21 @@ const Schedule: React.FC = () => {
         console.error("Error fetching subjects:", error);
       }
     }
+
+    if (labs.length === 0) {
+      try {
+        const responseLabs = await axios.get("http://localhost:5000/api/auth/rooms");
+        console.log("Fetched labs:", responseLabs.data);
+        setLabs(responseLabs.data);
+      } catch (error) {
+        console.error("Error fetching labs:", error);
+      }
+    }
+    
   };
   
   
   const handleCloseModal = () => setOpenModal(false);
-
-  const handleLabChange = (event: SelectChangeEvent<string>) => {
-    setSelectedLab(event.target.value);
-  };
 
   const handleViewChange = (event: SelectChangeEvent<string>) => {
     const newView = event.target.value;
@@ -123,16 +133,20 @@ const Schedule: React.FC = () => {
         const response = await axios.get("http://localhost:5000/api/auth/schedules");
         const schedules = response.data;
   
-        const mappedEvents = schedules.map((sched: any) => ({
-          id: sched._id,
-          title: `${sched.subjectName} (${sched.subjectCode})`,
-          start: `${sched.date}T${sched.startTime}`,
-          end: `${sched.date}T${sched.endTime}`,
-          extendedProps: {
-            room: sched.room,
-            instructorId: sched.instructor
-          }
-        }));
+        setAllSchedules(schedules);
+  
+        const mappedEvents = schedules
+          .filter((sched: any) => sched.room === selectedLab)
+          .map((sched: any) => ({
+            id: sched._id,
+            title: `${sched.subjectName} (${sched.subjectCode})`,
+            start: `${sched.date}T${sched.startTime}`,
+            end: `${sched.date}T${sched.endTime}`,
+            extendedProps: {
+              room: sched.room,
+              instructorId: sched.instructor
+            }
+          }));
   
         setCalendarEvents(mappedEvents);
       } catch (error) {
@@ -141,6 +155,40 @@ const Schedule: React.FC = () => {
     };
   
     fetchSchedules();
+  }, []);
+  
+  useEffect(() => {
+    const filteredEvents = allSchedules
+      .filter((sched: any) => sched.room === selectedLab)
+      .map((sched: any) => ({
+        id: sched._id,
+        title: `${sched.subjectName} (${sched.subjectCode})`,
+        start: `${sched.date}T${sched.startTime}`,
+        end: `${sched.date}T${sched.endTime}`,
+        extendedProps: {
+          room: sched.room,
+          instructorId: sched.instructor
+        }
+      }));
+  
+    setCalendarEvents(filteredEvents);
+  }, [selectedLab, allSchedules]);
+  
+  useEffect(() => {
+    const fetchLabs = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/auth/rooms");
+        setLabs(response.data);
+  
+        if (response.data.length > 0 && !selectedLab) {
+          setSelectedLab(response.data[0].name);
+        }
+      } catch (error) {
+        console.error("Error fetching labs:", error);
+      }
+    };
+  
+    fetchLabs();
   }, []);
   
 
@@ -175,9 +223,21 @@ const Schedule: React.FC = () => {
         icon: "error",
         title: "Failed to Add",
         text: error.response?.data?.message || "An error occurred while adding the schedule.",
+        timer: 2000,
+        showConfirmButton: false
       });
+  
+      setOpenModal(false);
+  
+      setTimeout(() => {
+        setOpenModal(true); 
+  
+        Swal.close();
+      }, 2000);
     }
   };
+  
+  
 
 
   return (
@@ -216,11 +276,17 @@ const Schedule: React.FC = () => {
             <ChevronRightIcon />
           </IconButton>
 
-          <FormControl variant="outlined" sx={{ ml: 2, minWidth: 120 }}>
+          <FormControl fullWidth>
             <InputLabel>Lab</InputLabel>
-            <Select label="Lab" name="lab" value={selectedLab} onChange={handleLabChange}>
-              <MenuItem value="Lab 1">Lab 1</MenuItem>
-              <MenuItem value="Lab 2">Lab 2</MenuItem>
+            <Select 
+              value={selectedLab} 
+              onChange={(e) => setSelectedLab(e.target.value)}
+            >
+              {labs.map((lab) => (
+                <MenuItem key={lab._id} value={lab.name}>
+                  {lab.name}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
@@ -338,8 +404,11 @@ const Schedule: React.FC = () => {
                     value={selectedLab} 
                     onChange={(e) => setSelectedLab(e.target.value)}
                   >
-                    <MenuItem value="Lab 1">Lab 1</MenuItem>
-                    <MenuItem value="Lab 2">Lab 2</MenuItem>
+                    {labs.map((lab) => (
+                      <MenuItem key={lab._id} value={lab.name}>
+                        {lab.name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
