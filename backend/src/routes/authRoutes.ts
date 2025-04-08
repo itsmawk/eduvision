@@ -2,6 +2,8 @@ import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Faculty from "../models/Faculty";
+import Schedule from "../models/Schedule";
+import Subject from "../models/Subject";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -181,5 +183,61 @@ router.get("/instructors", async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ message: "Error fetching instructors" });
   }
 });
+
+// GET SCHEDULES ROUTE
+router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const schedules = await Schedule.find().populate("instructor");  // Optionally populate instructor data
+    res.json(schedules);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching schedules", error });
+  }
+});
+
+// ADD NEW SCHEDULE ROUTE
+router.post("/schedules", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { subjectName, subjectCode, instructor, room, date, startTime, endTime } = req.body;
+
+    if (!subjectName || !subjectCode || !instructor || !room || !date || !startTime || !endTime) {
+      res.status(400).json({ message: "Please provide all required fields." });
+      return;
+    }
+
+    const newSchedule = new Schedule({
+      subjectName,
+      subjectCode,
+      instructor,
+      room,
+      date,
+      startTime,
+      endTime,
+    });
+
+    await newSchedule.save();
+
+    res.status(201).json({
+      message: "Schedule created successfully.",
+      schedule: newSchedule,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET SUBJECTS LIST
+router.get("/subjects", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const subjects = await Subject.find().select("subjectCode subjectName");
+    res.json(subjects);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching subjects" });
+  }
+});
+
+
 
 export default router;

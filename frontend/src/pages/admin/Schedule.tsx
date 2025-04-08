@@ -28,6 +28,7 @@ import { Dayjs } from "dayjs";
 import AdminMain from "./AdminMain";
 import { Fab } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import Swal from 'sweetalert2';
 import axios from "axios";
 
 const Schedule: React.FC = () => {
@@ -45,20 +46,34 @@ const Schedule: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [startTime, setStartTime] = useState<Dayjs | null>(null);
   const [endTime, setEndTime] = useState<Dayjs | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+
 
   const handleOpenModal = async () => {
     setOpenModal(true);
-    
+  
     if (instructors.length === 0) {
       try {
-        const response = await axios.get("http://localhost:5000/api/auth/instructors");
-        console.log("Fetched instructors:", response.data);
-        setInstructors(response.data);
+        const responseInstructors = await axios.get("http://localhost:5000/api/auth/instructors");
+        console.log("Fetched instructors:", responseInstructors.data);
+        setInstructors(responseInstructors.data);
       } catch (error) {
         console.error("Error fetching instructors:", error);
       }
     }
+  
+    if (subjects.length === 0) {
+      try {
+        const responseSubjects = await axios.get("http://localhost:5000/api/auth/subjects");
+        console.log("Fetched subjects:", responseSubjects.data);
+        setSubjects(responseSubjects.data);
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+      }
+    }
   };
+  
   
   const handleCloseModal = () => setOpenModal(false);
 
@@ -101,6 +116,68 @@ const Schedule: React.FC = () => {
     const calendarApi = calendarRef.current.getApi();
     setCurrentTitle(calendarApi.view.title);
   }, [calendarView]);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/auth/schedules");
+        const schedules = response.data;
+  
+        const mappedEvents = schedules.map((sched: any) => ({
+          id: sched._id,
+          title: `${sched.subjectName} (${sched.subjectCode})`,
+          start: `${sched.date}T${sched.startTime}`,
+          end: `${sched.date}T${sched.endTime}`,
+          extendedProps: {
+            room: sched.room,
+            instructorId: sched.instructor
+          }
+        }));
+  
+        setCalendarEvents(mappedEvents);
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+      }
+    };
+  
+    fetchSchedules();
+  }, []);
+  
+
+  const handleAddSchedule = async () => {
+    const scheduleData = {
+      subjectName,
+      subjectCode,
+      instructor: selectedInstructor,
+      room: selectedLab,
+      date: selectedDate?.format("YYYY-MM-DD"),
+      startTime: startTime?.format("HH:mm:ss"),
+      endTime: endTime?.format("HH:mm:ss")
+    };
+  
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/schedules", scheduleData);
+      console.log("Schedule added successfully:", response.data);
+  
+      Swal.fire({
+        icon: "success",
+        title: "Schedule Added",
+        text: "The schedule was added successfully!",
+        timer: 2000,
+        showConfirmButton: false
+      });
+  
+      setOpenModal(false);
+    } catch (error: any) {
+      console.error("Error adding schedule:", error);
+  
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Add",
+        text: error.response?.data?.message || "An error occurred while adding the schedule.",
+      });
+    }
+  };
 
 
   return (
@@ -169,7 +246,7 @@ const Schedule: React.FC = () => {
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={calendarView}
           headerToolbar={false}
-          events={[]}
+          events={calendarEvents}
           slotMinTime="07:00:00"
           slotMaxTime="19:00:00"
           allDaySlot={false}
@@ -204,38 +281,56 @@ const Schedule: React.FC = () => {
             borderRadius: 2 
           }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Add Schedule</Typography>
+
             <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Subject Code</InputLabel>
+                  <Select
+                    value={subjectCode}
+                    onChange={(e) => {
+                      const selectedCode = e.target.value;
+                      setSubjectCode(selectedCode);
+                      const selectedSubject = subjects.find(sub => sub.subjectCode === selectedCode);
+                      setSubjectName(selectedSubject?.subjectName || "");
+                    }}
+                  >
+                    {subjects.map((subject) => (
+                      <MenuItem key={subject._id} value={subject.subjectCode}>
+                        {subject.subjectCode}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
               <Grid item xs={12}>
                 <TextField 
                   fullWidth 
                   label="Subject Name" 
                   value={subjectName} 
-                  onChange={(e) => setSubjectName(e.target.value)} 
+                  InputProps={{
+                    readOnly: true,
+                  }}
                 />
               </Grid>
+
               <Grid item xs={12}>
-                <TextField 
-                  fullWidth 
-                  label="Subject Code" 
-                  value={subjectCode} 
-                  onChange={(e) => setSubjectCode(e.target.value)} 
-                />
+                <FormControl fullWidth>
+                  <InputLabel>Instructor</InputLabel>
+                  <Select
+                    value={selectedInstructor}
+                    onChange={(e) => setSelectedInstructor(e.target.value)}
+                  >
+                    {instructors.map((instructor) => (
+                      <MenuItem key={instructor._id} value={instructor._id}>
+                        {`${instructor.last_name}, ${instructor.first_name} ${instructor.middle_name ? instructor.middle_name[0] + '.' : ''}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               </Grid>
-              <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Instructor</InputLabel>
-                <Select
-                  value={selectedInstructor}
-                  onChange={(e) => setSelectedInstructor(e.target.value)}
-                >
-                  {instructors.map((instructor) => (
-                    <MenuItem key={instructor._id} value={instructor._id}>
-                      {`${instructor.last_name}, ${instructor.first_name} ${instructor.middle_name ? instructor.middle_name[0] + '.' : ''}`}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              </Grid>
+
               <Grid item xs={12}>
                 <FormControl fullWidth>
                   <InputLabel>Lab</InputLabel>
@@ -248,6 +343,7 @@ const Schedule: React.FC = () => {
                   </Select>
                 </FormControl>
               </Grid>
+
               <Grid item xs={12}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker 
@@ -258,6 +354,7 @@ const Schedule: React.FC = () => {
                   />
                 </LocalizationProvider>
               </Grid>
+
               <Grid item xs={6}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <TimePicker 
@@ -268,6 +365,7 @@ const Schedule: React.FC = () => {
                   />
                 </LocalizationProvider>
               </Grid>
+
               <Grid item xs={6}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <TimePicker 
@@ -278,9 +376,10 @@ const Schedule: React.FC = () => {
                   />
                 </LocalizationProvider>
               </Grid>
+
               <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end" }}>
                 <Button onClick={handleCloseModal} sx={{ mr: 1 }}>Cancel</Button>
-                <Button variant="contained" color="primary">Add</Button>
+                <Button variant="contained" color="primary" onClick={handleAddSchedule}>Add</Button>
               </Grid>
             </Grid>
           </Box>
