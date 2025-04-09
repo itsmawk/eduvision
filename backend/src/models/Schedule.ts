@@ -3,24 +3,38 @@ import mongoose, { Document, Schema } from "mongoose";
 interface ISchedule extends Document {
   subjectName: string;
   subjectCode: string;
-  instructor: string;
+  instructor: mongoose.Types.ObjectId;
   room: string;
   date: string;
   startTime: string;
   endTime: string;
+  days: {
+    mon: boolean;
+    tue: boolean;
+    wed: boolean;
+    thu: boolean;
+    fri: boolean;
+    sat: boolean;
+  };
 }
 
-const ScheduleSchema: Schema = new Schema(
-  {
-    subjectName: { type: String, required: true },
-    subjectCode: { type: String, required: true },
-    instructor: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty", required: true },
-    room: { type: String, required: true },
-    date: { type: String, required: true },
-    startTime: { type: String, required: true },
-    endTime: { type: String, required: true },
+const ScheduleSchema: Schema = new Schema({
+  subjectName: { type: String, required: true },
+  subjectCode: { type: String, required: true },
+  instructor: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty", required: true },
+  room: { type: String, required: true },
+  date: { type: String, required: true },
+  startTime: { type: String, required: true },
+  endTime: { type: String, required: true },
+  days: {
+    mon: { type: Boolean, default: false },
+    tue: { type: Boolean, default: false },
+    wed: { type: Boolean, default: false },
+    thu: { type: Boolean, default: false },
+    fri: { type: Boolean, default: false },
+    sat: { type: Boolean, default: false },
   },
-);
+});
 
 const Schedule = mongoose.model<ISchedule>("Schedule", ScheduleSchema);
 

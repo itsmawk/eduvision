@@ -30,6 +30,13 @@ import { Fab } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import Swal from 'sweetalert2';
 import axios from "axios";
+import dayjs from "dayjs";
+import weekday from "dayjs/plugin/weekday";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(weekday);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 const Schedule: React.FC = () => {
   const [calendarView, setCalendarView] = useState<string>("dayGridMonth");
@@ -50,6 +57,8 @@ const Schedule: React.FC = () => {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [labs, setLabs] = useState<any[]>([]);
   const [allSchedules, setAllSchedules] = useState<any[]>([]);
+  const daysOfWeek = ["mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  type DayKey = typeof daysOfWeek[number]; // "mon" | "tue" | ...
 
 
 
@@ -198,9 +207,10 @@ const Schedule: React.FC = () => {
       subjectCode,
       instructor: selectedInstructor,
       room: selectedLab,
-      date: selectedDate?.format("YYYY-MM-DD"),
+      date: selectedDate?.format("YYYY-MM"),
       startTime: startTime?.format("HH:mm:ss"),
-      endTime: endTime?.format("HH:mm:ss")
+      endTime: endTime?.format("HH:mm:ss"),
+      days: selectedDays // 👈 Add this line
     };
   
     try {
@@ -231,14 +241,75 @@ const Schedule: React.FC = () => {
   
       setTimeout(() => {
         setOpenModal(true); 
-  
         Swal.close();
       }, 2000);
     }
   };
   
-  
 
+  const [selectedDays, setSelectedDays] = useState<Record<DayKey, boolean>>({
+    mon: false,
+    tue: false,
+    wed: false,
+    thu: false,
+    fri: false,
+    sat: false,
+  });
+  
+  
+  const handleDayToggle = (day: DayKey) => {
+    setSelectedDays(prev => ({
+      ...prev,
+      [day]: !prev[day]
+    }));
+  };
+  
+  useEffect(() => {
+    const generateRecurringEvents = () => {
+      const events: any[] = [];
+  
+      allSchedules.forEach((sched: any) => {
+        if (sched.room !== selectedLab) return;
+  
+        const startTime = sched.startTime;
+        const endTime = sched.endTime;
+        const subjectTitle = `${sched.subjectName} (${sched.subjectCode})`;
+  
+        const [year, month] = sched.date.split("-").map(Number);
+        const firstDayOfMonth = dayjs(`${year}-${month}-01`);
+        const lastDayOfMonth = firstDayOfMonth.endOf("month");
+  
+        let currentDate = firstDayOfMonth;
+  
+        while (currentDate.isSameOrBefore(lastDayOfMonth)) {
+          const dayKey = currentDate.format("ddd").toLowerCase().slice(0, 3);
+  
+          if (sched.days[dayKey]) {
+            const eventDate = currentDate.format("YYYY-MM-DD");
+  
+            events.push({
+              id: `${sched._id}-${eventDate}`,
+              title: subjectTitle,
+              start: `${eventDate}T${startTime}`,
+              end: `${eventDate}T${endTime}`,
+              extendedProps: {
+                room: sched.room,
+                instructorId: sched.instructor,
+                originalScheduleId: sched._id
+              }
+            });
+          }
+  
+          currentDate = currentDate.add(1, "day");
+        }
+      });
+  
+      setCalendarEvents(events);
+    };
+  
+    generateRecurringEvents();
+  }, [selectedLab, allSchedules]);
+  
 
   return (
     <AdminMain>
@@ -414,13 +485,33 @@ const Schedule: React.FC = () => {
               </Grid>
 
               <Grid item xs={12}>
+                <Typography variant="subtitle1">Days</Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {daysOfWeek.map((day) => (
+                  <FormControl key={day} sx={{ minWidth: 80 }}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={selectedDays[day]}
+                        onChange={() => handleDayToggle(day)}
+                      />
+                      &nbsp;{day.charAt(0).toUpperCase() + day.slice(1)}
+                    </label>
+                  </FormControl>
+                ))}
+                </Box>
+              </Grid>
+
+
+              <Grid item xs={12}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker 
-                    label="Select Date" 
-                    value={selectedDate} 
-                    onChange={(date) => setSelectedDate(date)} 
-                    sx={{ width: "100%" }}
-                  />
+                <DatePicker
+                  label="Select Month"
+                  views={['year', 'month']}
+                  value={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  sx={{ width: "100%" }}
+                />
                 </LocalizationProvider>
               </Grid>
 
