@@ -17,6 +17,7 @@ import {
   Button, 
   Grid 
 } from "@mui/material";
+import DescriptionIcon from '@mui/icons-material/Description';
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -27,6 +28,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { Dayjs } from "dayjs";
 import AdminMain from "./AdminMain";
 import { Fab } from "@mui/material";
+import { darken } from '@mui/material/styles';
 import AddIcon from "@mui/icons-material/Add";
 import Swal from 'sweetalert2';
 import axios from "axios";
@@ -58,7 +60,7 @@ const Schedule: React.FC = () => {
   const [labs, setLabs] = useState<any[]>([]);
   const [allSchedules, setAllSchedules] = useState<any[]>([]);
   const daysOfWeek = ["mon", "tue", "wed", "thu", "fri", "sat"] as const;
-  type DayKey = typeof daysOfWeek[number]; // "mon" | "tue" | ...
+  type DayKey = typeof daysOfWeek[number];
 
 
 
@@ -146,16 +148,22 @@ const Schedule: React.FC = () => {
   
         const mappedEvents = schedules
           .filter((sched: any) => sched.room === selectedLab)
-          .map((sched: any) => ({
-            id: sched._id,
-            title: `${sched.subjectName} (${sched.subjectCode})`,
-            start: `${sched.date}T${sched.startTime}`,
-            end: `${sched.date}T${sched.endTime}`,
-            extendedProps: {
-              room: sched.room,
-              instructorId: sched.instructor
-            }
-          }));
+          .map((sched: any) => {
+            const title = calendarView === "dayGridMonth" 
+              ? `${sched.subjectCode}`
+              : `${sched.subjectCode} - ${sched.subjectName}`;
+  
+            return {
+              id: sched._id,
+              title: title,
+              start: `${sched.date}T${sched.startTime}`,
+              end: `${sched.date}T${sched.endTime}`,
+              extendedProps: {
+                room: sched.room,
+                instructorId: sched.instructor
+              }
+            };
+          });
   
         setCalendarEvents(mappedEvents);
       } catch (error) {
@@ -164,7 +172,8 @@ const Schedule: React.FC = () => {
     };
   
     fetchSchedules();
-  }, []);
+  }, [calendarView, selectedLab]);
+  
   
   useEffect(() => {
     const filteredEvents = allSchedules
@@ -210,7 +219,7 @@ const Schedule: React.FC = () => {
       date: selectedDate?.format("YYYY-MM"),
       startTime: startTime?.format("HH:mm:ss"),
       endTime: endTime?.format("HH:mm:ss"),
-      days: selectedDays // 👈 Add this line
+      days: selectedDays
     };
   
     try {
@@ -286,10 +295,12 @@ const Schedule: React.FC = () => {
   
           if (sched.days[dayKey]) {
             const eventDate = currentDate.format("YYYY-MM-DD");
+
+            const eventTitle = calendarView === "dayGridMonth" ? sched.subjectCode : subjectTitle;
   
             events.push({
               id: `${sched._id}-${eventDate}`,
-              title: subjectTitle,
+              title: eventTitle,
               start: `${eventDate}T${startTime}`,
               end: `${eventDate}T${endTime}`,
               extendedProps: {
@@ -309,6 +320,47 @@ const Schedule: React.FC = () => {
   
     generateRecurringEvents();
   }, [selectedLab, allSchedules]);
+  
+  
+  const handleDocumentAdd = () => {
+    Swal.fire({
+      title: 'Upload Schedule Document',
+      text: 'Please upload the schedule document (PDF/Word)',
+      input: 'file',
+      inputAttributes: {
+        accept: '.pdf,.doc,.docx',
+        'aria-label': 'Upload Schedule Document',
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Upload',
+      cancelButtonText: 'Cancel',
+      preConfirm: (file) => {
+        if (!file) {
+          Swal.showValidationMessage('Please select a file');
+          return false;
+        }
+        const formData = new FormData();
+        formData.append('scheduleDocument', file);
+        return axios
+          .post('http://localhost:5000/api/auth/uploadScheduleDocument', formData)
+          .then((response) => {
+            return response.data;
+          })
+          .catch((error) => {
+            Swal.showValidationMessage('Failed to upload document');
+            return Promise.reject(error); 
+          });
+      },
+    })
+      .then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire('Success!', 'Document uploaded successfully!', 'success');
+        }
+      })
+      .catch(() => {
+        Swal.fire('Error!', 'An error occurred while uploading the document.', 'error');
+      });
+  };
   
 
   return (
@@ -393,17 +445,40 @@ const Schedule: React.FC = () => {
           }}
         />
          <Fab
-          color="primary"
-          sx={{
-            position: "fixed",
-            bottom: 16,
-            right: 16,
-            zIndex: 1000,
-          }}
-          onClick={handleOpenModal}
-        >
-          <AddIcon />
-        </Fab>
+            color="primary"
+            sx={(theme) => ({
+              position: "fixed",
+              bottom: 16,
+              right: 16,
+              zIndex: 1000,
+              transition: "all 0.3s ease",
+              backgroundColor: theme.palette.primary.main,
+              "&:hover": {
+                backgroundColor: darken(theme.palette.primary.main, 0.1),
+              },
+            })}
+            onClick={handleOpenModal}
+          >
+            <AddIcon />
+          </Fab>
+
+          <Fab
+            color="secondary"
+            sx={(theme) => ({
+              position: "fixed",
+              bottom: 16,
+              right: 80,
+              zIndex: 1000,
+              transition: "all 0.3s ease",
+              backgroundColor: theme.palette.secondary.main,
+              "&:hover": {
+                backgroundColor: darken(theme.palette.secondary.main, 0.1),
+              },
+            })}
+            onClick={handleDocumentAdd}
+          >
+            <DescriptionIcon />
+          </Fab>
 
         <Modal open={openModal} onClose={handleCloseModal}>
           <Box sx={{ 
