@@ -199,9 +199,9 @@ router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
 // ADD NEW SCHEDULE ROUTE
 router.post("/schedules", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { subjectName, subjectCode, instructor, room, date, startTime, endTime, days } = req.body;
+    const { courseTitle, courseCode, instructor, room, date, startTime, endTime, days } = req.body;
 
-    if (!subjectName || !subjectCode || !instructor || !room || !date || !startTime || !endTime || !days) {
+    if (!courseTitle || !courseCode || !instructor || !room || !date || !startTime || !endTime || !days) {
       res.status(400).json({ message: "Please provide all required fields including days." });
       return;
     }
@@ -216,8 +216,8 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
     }
 
     const newSchedule = new Schedule({
-      subjectName,
-      subjectCode,
+      courseTitle,
+      courseCode,
       instructor,
       room,
       date,
@@ -242,7 +242,7 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
 // GET SUBJECTS LIST
 router.get("/subjects", async (req: Request, res: Response): Promise<void> => {
   try {
-    const subjects = await Subject.find().select("subjectCode subjectName");
+    const subjects = await Subject.find().select("courseCode courseTitle");
     res.json(subjects);
   } catch (error) {
     console.error(error);

@@ -1,5 +1,14 @@
 import Faculty, { IFaculty } from '../models/Faculty';
+import Subject from '../models/Subject';
 import bcrypt from 'bcryptjs';
+
+const sampleSubjects = [
+  { courseTitle: 'Introduction to Information Technology', courseCode: 'IT 101' },
+  { courseTitle: 'Programming Fundamentals', courseCode: 'IT 112' },
+  { courseTitle: 'Object-Oriented Programming', courseCode: 'IT 121' },
+  { courseTitle: 'Web Systems and Technologies', courseCode: 'IT 214' },
+  { courseTitle: 'Database Management Systems', courseCode: 'IT 221' },
+];
 
 const initializeAdmin = async () => {
   try {
@@ -27,8 +36,25 @@ const initializeAdmin = async () => {
     } else {
       console.log('Admin account already exists in the faculty collection:', adminExists);
     }
+
+    console.log('Cleaning invalid subject entries...');
+    await Subject.deleteMany({ courseCode: null });
+
+    console.log('Inserting sample subjects if not already present...');
+    for (const subject of sampleSubjects) {
+      const exists = await Subject.findOne({ courseCode: subject.courseCode });
+      if (!exists) {
+        await new Subject(subject).save();
+        console.log(`Inserted: ${subject.courseCode} - ${subject.courseTitle}`);
+      } else {
+        console.log(`Skipped (already exists): ${subject.courseCode}`);
+      }
+    }
+
+    console.log('Subject initialization completed.');
+
   } catch (error) {
-    console.error('Error initializing admin account:', error);
+    console.error('Error initializing admin and subjects:', error);
   }
 };
 

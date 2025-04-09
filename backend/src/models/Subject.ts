@@ -1,17 +1,17 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISubject extends Document {
-  subjectName: string;
-  subjectCode: string;
+  courseTitle: string;
+  courseCode: string;
 }
 
 const SubjectSchema: Schema = new Schema({
-  subjectName: {
+  courseTitle: {
     type: String,
     required: true,
     trim: true
   },
-  subjectCode: {
+  courseCode: {
     type: String,
     required: true,
     trim: true,

@@ -1,8 +1,8 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 interface ISchedule extends Document {
-  subjectName: string;
-  subjectCode: string;
+  courseTitle: string;
+  courseCode: string;
   instructor: mongoose.Types.ObjectId;
   room: string;
   date: string;
@@ -19,8 +19,8 @@ interface ISchedule extends Document {
 }
 
 const ScheduleSchema: Schema = new Schema({
-  subjectName: { type: String, required: true },
-  subjectCode: { type: String, required: true },
+  courseTitle: { type: String, required: true },
+  courseCode: { type: String, required: true },
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty", required: true },
   room: { type: String, required: true },
   date: { type: String, required: true },

@@ -47,8 +47,8 @@ const Schedule: React.FC = () => {
   const calendarRef = useRef<any>(null);
   
   const [openModal, setOpenModal] = useState(false);
-  const [subjectName, setSubjectName] = useState("");
-  const [subjectCode, setSubjectCode] = useState("");
+  const [courseTitle, setSubjectName] = useState("");
+  const [courseCode, setSubjectCode] = useState("");
   const [instructors, setInstructors] = useState<any[]>([]);
   const [selectedInstructor, setSelectedInstructor] = useState<string>('');
   const [selectedLab, setSelectedLab] = useState("Lab 1");
@@ -150,8 +150,8 @@ const Schedule: React.FC = () => {
           .filter((sched: any) => sched.room === selectedLab)
           .map((sched: any) => {
             const title = calendarView === "dayGridMonth" 
-              ? `${sched.subjectCode}`
-              : `${sched.subjectCode} - ${sched.subjectName}`;
+              ? `${sched.courseCode}`
+              : `${sched.courseCode} - ${sched.courseTitle}`;
   
             return {
               id: sched._id,
@@ -180,7 +180,7 @@ const Schedule: React.FC = () => {
       .filter((sched: any) => sched.room === selectedLab)
       .map((sched: any) => ({
         id: sched._id,
-        title: `${sched.subjectName} (${sched.subjectCode})`,
+        title: `${sched.courseTitle} (${sched.courseCode})`,
         start: `${sched.date}T${sched.startTime}`,
         end: `${sched.date}T${sched.endTime}`,
         extendedProps: {
@@ -212,8 +212,8 @@ const Schedule: React.FC = () => {
 
   const handleAddSchedule = async () => {
     const scheduleData = {
-      subjectName,
-      subjectCode,
+      courseTitle,
+      courseCode,
       instructor: selectedInstructor,
       room: selectedLab,
       date: selectedDate?.format("YYYY-MM"),
@@ -282,7 +282,7 @@ const Schedule: React.FC = () => {
   
         const startTime = sched.startTime;
         const endTime = sched.endTime;
-        const subjectTitle = `${sched.subjectName} (${sched.subjectCode})`;
+        const subjectTitle = `${sched.courseTitle} (${sched.courseCode})`;
   
         const [year, month] = sched.date.split("-").map(Number);
         const firstDayOfMonth = dayjs(`${year}-${month}-01`);
@@ -296,7 +296,7 @@ const Schedule: React.FC = () => {
           if (sched.days[dayKey]) {
             const eventDate = currentDate.format("YYYY-MM-DD");
 
-            const eventTitle = calendarView === "dayGridMonth" ? sched.subjectCode : subjectTitle;
+            const eventTitle = calendarView === "dayGridMonth" ? sched.courseCode : subjectTitle;
   
             events.push({
               id: `${sched._id}-${eventDate}`,
@@ -499,17 +499,17 @@ const Schedule: React.FC = () => {
                 <FormControl fullWidth>
                   <InputLabel>Subject Code</InputLabel>
                   <Select
-                    value={subjectCode}
+                    value={courseCode}
                     onChange={(e) => {
                       const selectedCode = e.target.value;
                       setSubjectCode(selectedCode);
-                      const selectedSubject = subjects.find(sub => sub.subjectCode === selectedCode);
-                      setSubjectName(selectedSubject?.subjectName || "");
+                      const selectedSubject = subjects.find(sub => sub.courseCode === selectedCode);
+                      setSubjectName(selectedSubject?.courseTitle || "");
                     }}
                   >
                     {subjects.map((subject) => (
-                      <MenuItem key={subject._id} value={subject.subjectCode}>
-                        {subject.subjectCode}
+                      <MenuItem key={subject._id} value={subject.courseCode}>
+                        {subject.courseCode}
                       </MenuItem>
                     ))}
                   </Select>
@@ -520,7 +520,7 @@ const Schedule: React.FC = () => {
                 <TextField 
                   fullWidth 
                   label="Subject Name" 
-                  value={subjectName} 
+                  value={courseTitle} 
                   InputProps={{
                     readOnly: true,
                   }}
