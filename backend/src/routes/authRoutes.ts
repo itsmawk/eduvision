@@ -5,6 +5,7 @@ import Faculty from "../models/Faculty";
 import Schedule from "../models/Schedule";
 import Subject from "../models/Subject";
 import Room from "../models/Room";
+import Section from "../models/Section";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -258,6 +259,17 @@ router.get("/rooms", async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching rooms" });
+  }
+});
+
+// GET SECTIONS LIST
+router.get("/sections", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const sections = await Section.find().select("course section block");
+    res.json(sections);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching sections" });
   }
 });
 

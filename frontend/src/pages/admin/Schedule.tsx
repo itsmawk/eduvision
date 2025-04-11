@@ -59,6 +59,8 @@ const Schedule: React.FC = () => {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [labs, setLabs] = useState<any[]>([]);
   const [allSchedules, setAllSchedules] = useState<any[]>([]);
+  const [sections, setSections] = useState<any[]>([]);
+  const [selectedSection, setSelectedSection] = useState<string>('');
   const daysOfWeek = ["mon", "tue", "wed", "thu", "fri", "sat"] as const;
   type DayKey = typeof daysOfWeek[number];
 
@@ -94,6 +96,16 @@ const Schedule: React.FC = () => {
         setLabs(responseLabs.data);
       } catch (error) {
         console.error("Error fetching labs:", error);
+      }
+    }
+
+    if (sections.length === 0) {
+      try {
+        const responseSections = await axios.get("http://localhost:5000/api/auth/sections");
+        console.log("Fetched sections:", responseSections.data);
+        setSections(responseSections.data);
+      } catch (error) {
+        console.error("Failed to fetch sections:", error);
       }
     }
     
@@ -480,22 +492,27 @@ const Schedule: React.FC = () => {
             <DescriptionIcon />
           </Fab>
 
-        <Modal open={openModal} onClose={handleCloseModal}>
-          <Box sx={{ 
-            position: "absolute", 
-            top: "50%", 
-            left: "50%", 
-            transform: "translate(-50%, -50%)", 
-            width: 400, 
-            bgcolor: "background.paper", 
-            boxShadow: 24, 
-            p: 4, 
-            borderRadius: 2 
-          }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Add Schedule</Typography>
+          <Modal open={openModal} onClose={handleCloseModal}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 800,
+              bgcolor: "background.paper",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Add Schedule
+            </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              {/* LEFT COLUMN */}
+              <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
                   <InputLabel>Subject Code</InputLabel>
                   <Select
@@ -503,7 +520,9 @@ const Schedule: React.FC = () => {
                     onChange={(e) => {
                       const selectedCode = e.target.value;
                       setSubjectCode(selectedCode);
-                      const selectedSubject = subjects.find(sub => sub.courseCode === selectedCode);
+                      const selectedSubject = subjects.find(
+                        (sub) => sub.courseCode === selectedCode
+                      );
                       setSubjectName(selectedSubject?.courseTitle || "");
                     }}
                   >
@@ -514,21 +533,18 @@ const Schedule: React.FC = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
 
-              <Grid item xs={12}>
-                <TextField 
-                  fullWidth 
-                  label="Subject Name" 
-                  value={courseTitle} 
+                <TextField
+                  fullWidth
+                  label="Subject Name"
+                  value={courseTitle}
                   InputProps={{
                     readOnly: true,
                   }}
+                  sx={{ mt: 2 }}
                 />
-              </Grid>
 
-              <Grid item xs={12}>
-                <FormControl fullWidth>
+                <FormControl fullWidth sx={{ mt: 2 }}>
                   <InputLabel>Instructor</InputLabel>
                   <Select
                     value={selectedInstructor}
@@ -536,18 +552,37 @@ const Schedule: React.FC = () => {
                   >
                     {instructors.map((instructor) => (
                       <MenuItem key={instructor._id} value={instructor._id}>
-                        {`${instructor.last_name}, ${instructor.first_name} ${instructor.middle_name ? instructor.middle_name[0] + '.' : ''}`}
+                        {`${instructor.last_name}, ${instructor.first_name} ${
+                          instructor.middle_name ? instructor.middle_name[0] + "." : ""
+                        }`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel id="section-label">Section</InputLabel>
+                  <Select
+                    labelId="section-label"
+                    value={selectedSection}
+                    label="Section"
+                    onChange={(e) => setSelectedSection(e.target.value)}
+                  >
+                    {sections.map((section) => (
+                      <MenuItem key={section._id} value={section._id}>
+                        {`${section.course} ${section.section}${section.block}`}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12}>
+              {/* RIGHT COLUMN */}
+              <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
                   <InputLabel>Lab</InputLabel>
-                  <Select 
-                    value={selectedLab} 
+                  <Select
+                    value={selectedLab}
                     onChange={(e) => setSelectedLab(e.target.value)}
                   >
                     {labs.map((lab) => (
@@ -557,64 +592,66 @@ const Schedule: React.FC = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
 
-              <Grid item xs={12}>
-                <Typography variant="subtitle1">Days</Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {daysOfWeek.map((day) => (
-                  <FormControl key={day} sx={{ minWidth: 80 }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={selectedDays[day]}
-                        onChange={() => handleDayToggle(day)}
-                      />
-                      &nbsp;{day.charAt(0).toUpperCase() + day.slice(1)}
-                    </label>
-                  </FormControl>
-                ))}
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1">Days</Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+                    {daysOfWeek.map((day) => (
+                      <FormControl key={day} sx={{ minWidth: 80 }}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={selectedDays[day]}
+                            onChange={() => handleDayToggle(day)}
+                          />
+                          &nbsp;{day.charAt(0).toUpperCase() + day.slice(1)}
+                        </label>
+                      </FormControl>
+                    ))}
+                  </Box>
                 </Box>
-              </Grid>
 
-
-              <Grid item xs={12}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Select Month"
-                  views={['year', 'month']}
-                  value={selectedDate}
-                  onChange={(date) => setSelectedDate(date)}
-                  sx={{ width: "100%" }}
-                />
-                </LocalizationProvider>
-              </Grid>
-
-              <Grid item xs={6}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <TimePicker 
-                    label="Start Time" 
-                    value={startTime} 
-                    onChange={(time) => setStartTime(time)} 
-                    sx={{ width: "100%" }}
+                  <DatePicker
+                    label="Select Month"
+                    views={["year", "month"]}
+                    value={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    sx={{ width: "100%", mt: 2 }}
                   />
                 </LocalizationProvider>
+
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid item xs={6}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <TimePicker
+                        label="Start Time"
+                        value={startTime}
+                        onChange={(time) => setStartTime(time)}
+                        sx={{ width: "100%" }}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <TimePicker
+                        label="End Time"
+                        value={endTime}
+                        onChange={(time) => setEndTime(time)}
+                        sx={{ width: "100%" }}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                </Grid>
               </Grid>
 
-              <Grid item xs={6}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <TimePicker 
-                    label="End Time" 
-                    value={endTime} 
-                    onChange={(time) => setEndTime(time)} 
-                    sx={{ width: "100%" }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-
-              <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end" }}>
-                <Button onClick={handleCloseModal} sx={{ mr: 1 }}>Cancel</Button>
-                <Button variant="contained" color="primary" onClick={handleAddSchedule}>Add</Button>
+              <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+                <Button onClick={handleCloseModal} sx={{ mr: 1 }}>
+                  Cancel
+                </Button>
+                <Button variant="contained" color="primary" onClick={handleAddSchedule}>
+                  Add
+                </Button>
               </Grid>
             </Grid>
           </Box>
