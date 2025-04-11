@@ -200,14 +200,33 @@ router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
 // ADD NEW SCHEDULE ROUTE
 router.post("/schedules", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { courseTitle, courseCode, instructor, room, date, startTime, endTime, days } = req.body;
+    const {
+      courseTitle,
+      courseCode,
+      instructor,
+      room,
+      startTime,
+      endTime,
+      days,
+      semesterStartDate,
+      semesterEndDate,
+    } = req.body;
 
-    if (!courseTitle || !courseCode || !instructor || !room || !date || !startTime || !endTime || !days) {
-      res.status(400).json({ message: "Please provide all required fields including days." });
+    if (
+      !courseTitle ||
+      !courseCode ||
+      !instructor ||
+      !room ||
+      !startTime ||
+      !endTime ||
+      !days ||
+      !semesterStartDate ||
+      !semesterEndDate
+    ) {
+      res.status(400).json({ message: "Please provide all required fields including semester dates and days." });
       return;
     }
 
-    // Optional: Validate days structure
     const validDays = ["mon", "tue", "wed", "thu", "fri", "sat"];
     const isValidDays = validDays.every(day => typeof days[day] === "boolean");
 
@@ -221,10 +240,11 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
       courseCode,
       instructor,
       room,
-      date,
       startTime,
       endTime,
-      days // Save it here
+      days,
+      semesterStartDate,
+      semesterEndDate,
     });
 
     await newSchedule.save();
@@ -238,6 +258,7 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 // GET SUBJECTS LIST

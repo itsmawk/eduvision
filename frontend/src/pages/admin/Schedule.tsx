@@ -33,12 +33,14 @@ import AddIcon from "@mui/icons-material/Add";
 import Swal from 'sweetalert2';
 import axios from "axios";
 import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
 import weekday from "dayjs/plugin/weekday";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(weekday);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
+dayjs.extend(isBetween);
 
 const Schedule: React.FC = () => {
   const [calendarView, setCalendarView] = useState<string>("dayGridMonth");
@@ -61,6 +63,16 @@ const Schedule: React.FC = () => {
   const [allSchedules, setAllSchedules] = useState<any[]>([]);
   const [sections, setSections] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>('');
+
+  type SemesterOption = {
+    label: string;
+    value: string;
+    startDate: string;
+    endDate: string;
+  };
+
+  const [semesterOptions, setSemesterOptions] = useState<SemesterOption[]>([]);
+  const [selectedSemester, setSelectedSemester] = useState<string | null>(null);
   const daysOfWeek = ["mon", "tue", "wed", "thu", "fri", "sat"] as const;
   type DayKey = typeof daysOfWeek[number];
 
@@ -108,6 +120,12 @@ const Schedule: React.FC = () => {
         console.error("Failed to fetch sections:", error);
       }
     }
+
+    const upcoming = generateUpcomingSemesters();
+      if (upcoming.length > 0) {
+        setSemesterOptions(upcoming);
+        setSelectedSemester(upcoming[1]?.value || upcoming[0].value);
+      }
     
   };
   
@@ -223,15 +241,31 @@ const Schedule: React.FC = () => {
   
 
   const handleAddSchedule = async () => {
+    const selectedSemesterData = semesterOptions.find(
+      (semester) => semester.value === selectedSemester
+    );
+  
+    if (!selectedSemesterData) {
+      Swal.fire({
+        icon: "error",
+        title: "No Semester Selected",
+        text: "Please select a valid semester before adding the schedule.",
+        timer: 2000,
+        showConfirmButton: false
+      });
+      return;
+    }
+  
     const scheduleData = {
       courseTitle,
       courseCode,
       instructor: selectedInstructor,
       room: selectedLab,
-      date: selectedDate?.format("YYYY-MM"),
       startTime: startTime?.format("HH:mm:ss"),
       endTime: endTime?.format("HH:mm:ss"),
-      days: selectedDays
+      days: selectedDays,
+      semesterStartDate: selectedSemesterData.startDate,
+      semesterEndDate: selectedSemesterData.endDate
     };
   
     try {
@@ -267,6 +301,7 @@ const Schedule: React.FC = () => {
     }
   };
   
+  
 
   const [selectedDays, setSelectedDays] = useState<Record<DayKey, boolean>>({
     mon: false,
@@ -296,18 +331,17 @@ const Schedule: React.FC = () => {
         const endTime = sched.endTime;
         const subjectTitle = `${sched.courseTitle} (${sched.courseCode})`;
   
-        const [year, month] = sched.date.split("-").map(Number);
-        const firstDayOfMonth = dayjs(`${year}-${month}-01`);
-        const lastDayOfMonth = firstDayOfMonth.endOf("month");
+        const semesterStart = dayjs(sched.semesterStartDate);
+        const semesterEnd = dayjs(sched.semesterEndDate);
   
-        let currentDate = firstDayOfMonth;
+        let currentDate = semesterStart;
   
-        while (currentDate.isSameOrBefore(lastDayOfMonth)) {
+        while (currentDate.isSameOrBefore(semesterEnd)) {
           const dayKey = currentDate.format("ddd").toLowerCase().slice(0, 3);
   
           if (sched.days[dayKey]) {
             const eventDate = currentDate.format("YYYY-MM-DD");
-
+  
             const eventTitle = calendarView === "dayGridMonth" ? sched.courseCode : subjectTitle;
   
             events.push({
@@ -331,7 +365,8 @@ const Schedule: React.FC = () => {
     };
   
     generateRecurringEvents();
-  }, [selectedLab, allSchedules]);
+  }, [selectedLab, allSchedules, calendarView]);
+  
   
   
   const handleDocumentAdd = () => {
@@ -374,6 +409,61 @@ const Schedule: React.FC = () => {
       });
   };
   
+
+  const generateUpcomingSemesters = () => {
+    const today = dayjs();
+    const year = today.year();
+  
+    const semesters = [];
+  
+    const firstStart  = dayjs(`${year}-08-01`);
+    const firstEnd    = dayjs(`${year}-12-31`);
+
+    const secondStart = dayjs(`${year}-01-01`);
+    const secondEnd   = dayjs(`${year}-05-31`);
+
+    const nextSecondStart = dayjs(`${year + 1}-01-01`);
+    const nextSecondEnd   = dayjs(`${year + 1}-05-31`);
+  
+    if (today.isBetween(firstStart, firstEnd, null, '[]')) {
+      semesters.push({
+        label: `1ST Semester, AY ${year}-${year + 1}`,
+        value: `1ST-${year}-${year + 1}`,
+        startDate: firstStart.format('YYYY-MM-DD'),
+        endDate:   firstEnd.format('YYYY-MM-DD'),
+      });
+    }
+  
+    if (today.isBetween(secondStart, secondEnd, null, '[]')) {
+      semesters.push({
+        label: `2ND Semester, AY ${year - 1}-${year}`,
+        value: `2ND-${year - 1}-${year}`,
+        startDate: secondStart.format('YYYY-MM-DD'),
+        endDate:   secondEnd.format('YYYY-MM-DD'),
+      });
+    }
+  
+    if (firstStart.isAfter(today)) {
+      semesters.push({
+        label: `1ST Semester, AY ${year}-${year + 1}`,
+        value: `1ST-${year}-${year + 1}`,
+        startDate: firstStart.format('YYYY-MM-DD'),
+        endDate:   firstEnd.format('YYYY-MM-DD'),
+      });
+    }
+  
+    if (nextSecondStart.isAfter(today)) {
+      semesters.push({
+        label: `2ND Semester, AY ${year}-${year + 1}`,
+        value: `2ND-${year}-${year + 1}`,
+        startDate: nextSecondStart.format('YYYY-MM-DD'),
+        endDate:   nextSecondEnd.format('YYYY-MM-DD'),
+      });
+    }
+  
+    return semesters;
+  };
+
 
   return (
     <AdminMain>
@@ -611,15 +701,20 @@ const Schedule: React.FC = () => {
                   </Box>
                 </Box>
 
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    label="Select Month"
-                    views={["year", "month"]}
-                    value={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
-                    sx={{ width: "100%", mt: 2 }}
-                  />
-                </LocalizationProvider>
+                <FormControl fullWidth>
+                  <InputLabel>Semester</InputLabel>
+                  <Select
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                  >
+                    {semesterOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
 
                 <Grid container spacing={2} sx={{ mt: 1 }}>
                   <Grid item xs={6}>

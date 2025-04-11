@@ -5,9 +5,10 @@ interface ISchedule extends Document {
   courseCode: string;
   instructor: mongoose.Types.ObjectId;
   room: string;
-  date: string;
   startTime: string;
   endTime: string;
+  semesterStartDate: string;
+  semesterEndDate: string;
   days: {
     mon: boolean;
     tue: boolean;
@@ -23,9 +24,10 @@ const ScheduleSchema: Schema = new Schema({
   courseCode: { type: String, required: true },
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty", required: true },
   room: { type: String, required: true },
-  date: { type: String, required: true },
   startTime: { type: String, required: true },
   endTime: { type: String, required: true },
+  semesterStartDate: { type: String, required: true },
+  semesterEndDate: { type: String, required: true },
   days: {
     mon: { type: Boolean, default: false },
     tue: { type: Boolean, default: false },
