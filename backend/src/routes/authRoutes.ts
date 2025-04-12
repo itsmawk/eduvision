@@ -7,9 +7,17 @@ import Subject from "../models/Subject";
 import Room from "../models/Room";
 import Section from "../models/Section";
 import dotenv from "dotenv";
+import multer from "multer";
+import mammoth from "mammoth";
+import fs from "fs";
+import path from "path";
+import mongoose from "mongoose";
+
+
 
 dotenv.config();
 const router = express.Router();
+const upload = multer({ dest: "uploads/" });
 
 // LOGIN ROUTE
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
@@ -294,6 +302,139 @@ router.get("/sections", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+interface ScheduleInput {
+  courseCode: string;
+  courseTitle: string;
+  instructor: mongoose.Types.ObjectId;
+  room: string;
+  startTime: string;
+  endTime: string;
+  semesterStartDate: string;
+  semesterEndDate: string;
+  days: {
+    mon: boolean;
+    tue: boolean;
+    wed: boolean;
+    thu: boolean;
+    fri: boolean;
+    sat: boolean;
+  };
+}
+
+
+// PARSE AND UPLOAD TEACHING LOAD DOCUMENT
+router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      console.log("❌ No file uploaded.");
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    const filePath = req.file.path;
+    console.log("📄 Uploaded file path:", filePath);
+
+    const result = await mammoth.extractRawText({ path: filePath });
+    const text = result.value;
+    console.log("📄 Extracted text (first 500 chars):", text.slice(0, 500));
+
+    // Cleanup file
+    fs.unlink(filePath, () => {
+      console.log("🧹 Temp file cleaned up.");
+    });
+
+    const instructorNameMatch = text.match(/Name of Instructor:\s*(.*)/i);
+    const instructorFullName = instructorNameMatch ? instructorNameMatch[1].trim().toUpperCase() : "";
+    console.log("👨‍🏫 Parsed instructor name:", instructorFullName);
+
+    const instructor = await Faculty.findOne({
+      $expr: {
+        $regexMatch: {
+          input: { $concat: ["$first_name", " ", "$middle_name", " ", "$last_name"] },
+          regex: instructorFullName.replace(/\s+/g, ".*"),
+          options: "i"
+        }
+      }
+    });
+
+    if (!instructor) {
+      console.log("❌ Instructor not found in DB.");
+      res.status(404).json({ message: "Instructor not found in database" });
+      return;
+    }
+
+    console.log("✅ Instructor found:", `${instructor.first_name} ${instructor.middle_name} ${instructor.last_name}`);
+
+    const lines = text.split("\n").map(line => line.trim()).filter(Boolean);
+    console.log("🔍 Total extracted lines:", lines.length);
+
+    let currentCourseCode = "";
+    let currentCourseTitle = "";
+    const schedules: ScheduleInput[] = [];
+
+    const getDaysObj = (dayStr: string) => ({
+      mon: /M/.test(dayStr),
+      tue: /T(?!h)/.test(dayStr),
+      wed: /W/.test(dayStr),
+      thu: /Th|H/.test(dayStr),
+      fri: /F/.test(dayStr),
+      sat: /S/.test(dayStr),
+    });
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      const courseCodeMatch = line.match(/^(IS|IT)\s*\d{3}/);
+      if (courseCodeMatch) {
+        currentCourseCode = courseCodeMatch[0];
+        currentCourseTitle = lines[i + 1]?.split("(")[0]?.trim() || "";
+        console.log("📘 Found course:", currentCourseCode, "-", currentCourseTitle);
+        continue;
+      }
+
+      const timeMatch = line.match(/(\d{2}:\d{2})\s*–\s*(\d{2}:\d{2})\s*\((lec|lab)\)/i);
+      if (timeMatch) {
+        const [ , startTime, endTime, type ] = timeMatch;
+        const dayStr = lines[i + 1] || "";
+        const days = getDaysObj(dayStr);
+
+        schedules.push({
+          courseCode: currentCourseCode,
+          courseTitle: currentCourseTitle,
+          instructor: instructor._id,
+          room: "TBD",
+          startTime,
+          endTime,
+          semesterStartDate: "2025-01-10",
+          semesterEndDate: "2025-05-30",
+          days,
+        });
+
+        console.log(`🗓 Added ${type} for ${currentCourseCode}: ${startTime}–${endTime} on ${dayStr}`);
+      }
+    }
+
+        console.log("📤 Parsed schedules ready to return:", JSON.stringify(schedules, null, 2));
+
+        res.status(200).json({ message: "Preview parsed data", data: schedules });
+
+      } catch (error) {
+        console.error("🔥 Error while processing document:", error);
+        res.status(500).json({ message: "Failed to process document", error });
+      }
+    });
+
+
+router.post("/confirmSchedules", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const schedules = req.body.schedules;
+    const saved = await Schedule.insertMany(schedules);
+    res.status(201).json({ message: "Schedules saved successfully", data: saved });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to save schedules" });
+  }
+});
 
 
 export default router;

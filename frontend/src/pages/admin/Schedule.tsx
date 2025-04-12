@@ -372,10 +372,10 @@ const Schedule: React.FC = () => {
   const handleDocumentAdd = () => {
     Swal.fire({
       title: 'Upload Schedule Document',
-      text: 'Please upload the schedule document (PDF/Word)',
+      text: 'Please upload the schedule document (Word)',
       input: 'file',
       inputAttributes: {
-        accept: '.pdf,.doc,.docx',
+        accept: '.doc,.docx',
         'aria-label': 'Upload Schedule Document',
       },
       showCancelButton: true,
@@ -386,28 +386,51 @@ const Schedule: React.FC = () => {
           Swal.showValidationMessage('Please select a file');
           return false;
         }
+  
         const formData = new FormData();
         formData.append('scheduleDocument', file);
+  
         return axios
           .post('http://localhost:5000/api/auth/uploadScheduleDocument', formData)
-          .then((response) => {
-            return response.data;
-          })
+          .then((response) => response.data)
           .catch((error) => {
             Swal.showValidationMessage('Failed to upload document');
-            return Promise.reject(error); 
+            return Promise.reject(error);
           });
       },
-    })
-      .then((result) => {
-        if (result.isConfirmed) {
-          Swal.fire('Success!', 'Document uploaded successfully!', 'success');
-        }
-      })
-      .catch(() => {
-        Swal.fire('Error!', 'An error occurred while uploading the document.', 'error');
-      });
+    }).then((result) => {
+      if (result.isConfirmed && result.value?.data) {
+        const schedules = result.value.data;
+  
+        const htmlPreview = schedules.map((s: any) => `
+          <strong>${s.courseCode}</strong>: ${s.courseTitle}<br/>
+          ${s.startTime} - ${s.endTime} | Days: ${Object.keys(s.days).filter(d => s.days[d]).join(', ')}<br/>
+          <hr/>
+        `).join('');
+  
+        Swal.fire({
+          title: 'Confirm Parsed Schedules',
+          html: `<div style="max-height: 300px; overflow-y: auto;">${htmlPreview}</div>`,
+          showCancelButton: true,
+          confirmButtonText: 'Save to Database',
+          cancelButtonText: 'Cancel',
+        }).then((confirmResult) => {
+          if (confirmResult.isConfirmed) {
+            axios.post('http://localhost:5000/api/auth/confirmSchedules', { schedules })
+              .then(() => {
+                Swal.fire('Success!', 'Schedules saved to the database.', 'success');
+              })
+              .catch(() => {
+                Swal.fire('Error', 'Failed to save schedules.', 'error');
+              });
+          }
+        });
+      }
+    }).catch(() => {
+      Swal.fire('Error', 'Something went wrong during upload.', 'error');
+    });
   };
+  
   
 
   const generateUpcomingSemesters = () => {
