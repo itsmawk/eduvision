@@ -9,6 +9,7 @@ interface ISchedule extends Document {
   endTime: string;
   semesterStartDate: string;
   semesterEndDate: string;
+  section: mongoose.Types.ObjectId;
   days: {
     mon: boolean;
     tue: boolean;
@@ -28,6 +29,7 @@ const ScheduleSchema: Schema = new Schema({
   endTime: { type: String, required: true },
   semesterStartDate: { type: String, required: true },
   semesterEndDate: { type: String, required: true },
+  section: { type: mongoose.Schema.Types.ObjectId, ref: "Section", required: true },
   days: {
     mon: { type: Boolean, default: false },
     tue: { type: Boolean, default: false },

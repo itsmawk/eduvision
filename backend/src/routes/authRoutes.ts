@@ -218,6 +218,7 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
       days,
       semesterStartDate,
       semesterEndDate,
+      section,
     } = req.body;
 
     if (
@@ -229,7 +230,8 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
       !endTime ||
       !days ||
       !semesterStartDate ||
-      !semesterEndDate
+      !semesterEndDate ||
+      !section 
     ) {
       res.status(400).json({ message: "Please provide all required fields including semester dates and days." });
       return;
@@ -253,6 +255,7 @@ router.post("/schedules", async (req: Request, res: Response): Promise<void> => 
       days,
       semesterStartDate,
       semesterEndDate,
+      section,
     });
 
     await newSchedule.save();
@@ -305,6 +308,7 @@ router.get("/sections", async (req: Request, res: Response): Promise<void> => {
 interface ScheduleInput {
   courseCode: string;
   courseTitle: string;
+  section: mongoose.Types.ObjectId;
   instructor: mongoose.Types.ObjectId;
   room: string;
   startTime: string;
@@ -319,6 +323,7 @@ interface ScheduleInput {
     fri: boolean;
     sat: boolean;
   };
+  displaySection?: string;
 }
 
 
@@ -338,10 +343,33 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
     const text = result.value;
     console.log("📄 Extracted text (first 500 chars):", text.slice(0, 500));
 
-    // Cleanup file
     fs.unlink(filePath, () => {
       console.log("🧹 Temp file cleaned up.");
     });
+
+    const semAyMatch = text.match(/(\d(?:ST|ND|RD|TH))\s+Semester,\s*AY\s*(\d{4})-(\d{4})/i);
+    let semester = "TBD";
+    let semesterStartDate = "TBD";
+    let semesterEndDate = "TBD";
+
+    if (semAyMatch) {
+      semester = semAyMatch[1].toUpperCase();
+      const startYear = parseInt(semAyMatch[2], 10);
+      const endYear = parseInt(semAyMatch[3], 10);
+
+      if (semester === "1ST") {
+        semesterStartDate = `${startYear}-08-01`;
+        semesterEndDate = `${startYear}-12-15`;
+      } else if (semester === "2ND") {
+        semesterStartDate = `${endYear}-01-10`;
+        semesterEndDate = `${endYear}-05-30`;
+      }
+
+      console.log(`🗓 Parsed semester: ${semester}, AY: ${startYear}-${endYear}`);
+      console.log(`🗓 Semester dates: ${semesterStartDate} to ${semesterEndDate}`);
+    } else {
+      console.warn("⚠️ Semester and AY not found, using default dates.");
+    }
 
     const instructorNameMatch = text.match(/Name of Instructor:\s*(.*)/i);
     const instructorFullName = instructorNameMatch ? instructorNameMatch[1].trim().toUpperCase() : "";
@@ -370,6 +398,7 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
 
     let currentCourseCode = "";
     let currentCourseTitle = "";
+    let currentSection = "";
     const schedules: ScheduleInput[] = [];
 
     const getDaysObj = (dayStr: string) => ({
@@ -387,8 +416,14 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
       const courseCodeMatch = line.match(/^(IS|IT)\s*\d{3}/);
       if (courseCodeMatch) {
         currentCourseCode = courseCodeMatch[0];
+        const courseLine = lines[i + 1] || "";
         currentCourseTitle = lines[i + 1]?.split("(")[0]?.trim() || "";
         console.log("📘 Found course:", currentCourseCode, "-", currentCourseTitle);
+
+        const sectionMatch = courseLine.match(/\(([^)]+)\)/);
+        currentSection = sectionMatch ? sectionMatch[1].trim() : "Unknown";
+
+        console.log("📘 Found course:", currentCourseCode, "-", currentCourseTitle, "| Section:", currentSection);
         continue;
       }
 
@@ -398,31 +433,55 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
         const dayStr = lines[i + 1] || "";
         const days = getDaysObj(dayStr);
 
+        const [courseCodePart, sectionBlock] = currentSection.split(" ");
+        const sectionLevel = sectionBlock?.[0];
+        const blockLetter = sectionBlock?.[1];
+
+        const sectionDoc = await Section.findOne({
+          course: new RegExp(courseCodePart, "i"),
+          section: sectionLevel,
+          block: blockLetter,
+        });
+
+        if (!sectionDoc) {
+          console.warn(`⚠️ Section not found: ${currentSection}`);
+          continue;
+        }
+
         schedules.push({
           courseCode: currentCourseCode,
           courseTitle: currentCourseTitle,
+          section: sectionDoc._id as mongoose.Types.ObjectId,
           instructor: instructor._id,
           room: "TBD",
           startTime,
           endTime,
-          semesterStartDate: "2025-01-10",
-          semesterEndDate: "2025-05-30",
+          semesterStartDate,
+          semesterEndDate,
           days,
+          displaySection: `${sectionDoc.course} ${sectionDoc.section}${sectionDoc.block}`,
         });
 
         console.log(`🗓 Added ${type} for ${currentCourseCode}: ${startTime}–${endTime} on ${dayStr}`);
       }
     }
 
-        console.log("📤 Parsed schedules ready to return:", JSON.stringify(schedules, null, 2));
+    console.log("📤 Parsed schedules ready to return:", JSON.stringify(schedules, null, 2));
 
-        res.status(200).json({ message: "Preview parsed data", data: schedules });
-
-      } catch (error) {
-        console.error("🔥 Error while processing document:", error);
-        res.status(500).json({ message: "Failed to process document", error });
-      }
+    res.status(200).json({
+      message: "Preview parsed data",
+      data: schedules,
+      instructorName: `${instructor.last_name}, ${instructor.first_name} ${instructor.middle_name} `,
+      academicYear: `${semAyMatch?.[2]}-${semAyMatch?.[3]}`,
+      semester: semester,
     });
+
+  } catch (error) {
+    console.error("🔥 Error while processing document:", error);
+    res.status(500).json({ message: "Failed to process document", error });
+  }
+});
+
 
 
 router.post("/confirmSchedules", async (req: Request, res: Response): Promise<void> => {

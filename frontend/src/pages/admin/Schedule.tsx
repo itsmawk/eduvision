@@ -265,7 +265,8 @@ const Schedule: React.FC = () => {
       endTime: endTime?.format("HH:mm:ss"),
       days: selectedDays,
       semesterStartDate: selectedSemesterData.startDate,
-      semesterEndDate: selectedSemesterData.endDate
+      semesterEndDate: selectedSemesterData.endDate,
+      section: selectedSection,
     };
   
     try {
@@ -401,16 +402,50 @@ const Schedule: React.FC = () => {
     }).then((result) => {
       if (result.isConfirmed && result.value?.data) {
         const schedules = result.value.data;
+        const instructorName = result.value.instructorName || "Unknown Instructor";
+        const academicYear = result.value.academicYear || "Unknown AY";
+        const semester = result.value.semester || "Unknown Semester";
   
-        const htmlPreview = schedules.map((s: any) => `
-          <strong>${s.courseCode}</strong>: ${s.courseTitle}<br/>
-          ${s.startTime} - ${s.endTime} | Days: ${Object.keys(s.days).filter(d => s.days[d]).join(', ')}<br/>
-          <hr/>
-        `).join('');
-  
+        const htmlPreview = `
+          <div style="margin-bottom: 10px; display: flex; justify-content: space-between;">
+            <div><strong>Instructor:</strong>&nbsp;${instructorName}</div>
+            <div><strong>Academic Year:</strong>&nbsp;${semester} Semester, ${academicYear}</div>
+          </div>
+          <div style="overflow-x: auto; max-height: 300px; overflow-y: auto;">
+            <table border="1" cellpadding="5" cellspacing="0" style="width: 100%; font-size: 14px; border-collapse: collapse;">
+              <thead style="background: #f0f0f0;">
+                <tr>
+                  <th>Course Code</th>
+                  <th>Course Title</th>
+                  <th>Section</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Days</th>
+                  <th>Room</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${schedules.map((s: any) => `
+                  <tr>
+                    <td>${s.courseCode}</td>
+                    <td>${s.courseTitle}</td>
+                    <td>${s.displaySection || s.section}</td>
+                    <td>${s.startTime}</td>
+                    <td>${s.endTime}</td>
+                    <td>${Object.keys(s.days).filter(day => s.days[day]).join(', ')}</td>
+                    <td>${s.room}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+          
         Swal.fire({
           title: 'Confirm Parsed Schedules',
-          html: `<div style="max-height: 300px; overflow-y: auto;">${htmlPreview}</div>`,
+          html: htmlPreview,
+          width: '800px',
           showCancelButton: true,
           confirmButtonText: 'Save to Database',
           cancelButtonText: 'Cancel',
