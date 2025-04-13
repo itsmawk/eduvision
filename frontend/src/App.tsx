@@ -8,7 +8,9 @@ import LiveVideo from "./pages/admin/LiveVideo";
 import Schedule from "./pages/admin/Schedule";
 import UserMain from "./pages/user/UserMain";
 import UpdateCredentials from "./pages/user/UpdateCredentials";
-import UserDashboard from "./pages/user/UserDashboard";
+{/* for faculty*/}
+import FacultyDashboard from "./pages/user/FacultyDashboard";
+import FacultySchedule from "./pages/user/FacultySchedule";
 import { FacultyProvider } from "./context/FacultyContext";
 
 
@@ -27,7 +29,16 @@ export default function App() {
           path="/user-dashboard/:id"
           element={
             <UserMain>
-              <UserDashboard />
+              <FacultyDashboard />
+            </UserMain>
+          }
+        />
+
+        <Route
+          path="/user-schedule/:id"
+          element={
+            <UserMain>
+              <FacultySchedule />
             </UserMain>
           }
         />

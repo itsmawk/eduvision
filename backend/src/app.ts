@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes';
+import facultyRoutes from './routes/facultyRoutes';
+
 
 dotenv.config();
 
@@ -17,5 +19,6 @@ mongoose.connect(MONGO_URI).then(() => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', facultyRoutes);
 
 export default app;

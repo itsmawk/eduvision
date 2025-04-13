@@ -9,14 +9,14 @@ import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
 
-const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activePage, setActivePage] = useState(location.pathname);
 
   const menuItems = [
-    { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
-    { text: "Schedule", icon: <CalendarToday />, path: "/schedule/:id" },
+    { text: "Dashboard", icon: <Dashboard />, path: "/user-dashboard/:id" },
+    { text: "Schedule", icon: <CalendarToday />, path: "/user-schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];
 
@@ -102,4 +102,4 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
-export default AdminMain;
+export default UserMain;

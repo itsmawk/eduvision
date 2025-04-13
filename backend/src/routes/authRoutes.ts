@@ -60,39 +60,6 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// UPDATE CREDENTIALS ROUTE
-router.put("/update-credentials/:id", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { username, password } = req.body;
-
-    const faculty = await Faculty.findById(id);
-    if (!faculty) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    const existingUser = await Faculty.findOne({ username, _id: { $ne: id } });
-    if (existingUser) {
-      res.status(400).json({ message: "Username is already taken" });
-      return;
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    faculty.username = username;
-    faculty.password = hashedPassword;
-    faculty.status = "permanent";
-
-    await faculty.save();
-
-    res.json({ message: "Credentials updated successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
 // GET FACULTY LIST
 router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   try {
@@ -197,7 +164,7 @@ router.get("/instructors", async (req: Request, res: Response): Promise<void> =>
 // GET SCHEDULES ROUTE
 router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
   try {
-    const schedules = await Schedule.find().populate("instructor");  // Optionally populate instructor data
+    const schedules = await Schedule.find().populate("instructor");
     res.json(schedules);
   } catch (error) {
     console.error(error);
@@ -481,7 +448,6 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
     res.status(500).json({ message: "Failed to process document", error });
   }
 });
-
 
 
 router.post("/confirmSchedules", async (req: Request, res: Response): Promise<void> => {

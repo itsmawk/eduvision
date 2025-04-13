@@ -31,9 +31,14 @@ export default function Login() {
   
       if (requiresUpdate) {
         navigate(`/update-credentials/${faculty.id}`);
+      } else if (
+        faculty.role?.toLowerCase() === "instructor" &&
+        faculty.status?.toLowerCase() === "permanent"
+      ) {
+        navigate(`/user-dashboard/${faculty.id}`); // 👈 go to UserDashboard.tsx
       } else {
-        navigate(`/dashboard/${faculty.id}`);
-      }      
+        navigate(`/dashboard/${faculty.id}`); // default dashboard
+      }   
       
     } catch (error) {
       let errorMessage = "Invalid Credentials";
