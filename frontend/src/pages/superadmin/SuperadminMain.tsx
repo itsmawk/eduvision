@@ -4,19 +4,20 @@ import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
-import { Dashboard, Videocam, CalendarToday } from "@mui/icons-material";
+import { Dashboard, Videocam, CalendarToday, People } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
 
-const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const SuperadminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activePage, setActivePage] = useState(location.pathname);
 
   const menuItems = [
-    { text: "Dashboard", icon: <Dashboard />, path: "/faculty-dashboard/:id" },
-    { text: "Schedule", icon: <CalendarToday />, path: "/user-schedule/:id" },
+    { text: "Dashboard", icon: <Dashboard />, path: "/superadmin-dashboard/:id" },
+    { text: "Dean Info", icon: <People />, path: "/dean-info/:id" },
+    { text: "Schedule", icon: <CalendarToday />, path: "/superadmin-schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];
 
@@ -39,7 +40,7 @@ const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Drawer
         variant="permanent"
         sx={{
-          width: drawerWidth - 130,
+          width: drawerWidth - 100,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
@@ -94,11 +95,12 @@ const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, p: 1, mt: 4 }}>
+      <Box component="main" sx={{ flexGrow: 1, pl: 1, pr: 3, pb: 3 }}>
+        <Toolbar />
         {children}
       </Box>
     </Box>
   );
 };
 
-export default UserMain;
+export default SuperadminMain;

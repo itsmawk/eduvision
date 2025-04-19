@@ -23,7 +23,7 @@ interface ISchedule extends Document {
 const ScheduleSchema: Schema = new Schema({
   courseTitle: { type: String, required: true },
   courseCode: { type: String, required: true },
-  instructor: { type: mongoose.Schema.Types.ObjectId, ref: "Faculty", required: true },
+  instructor: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   room: { type: String, required: true },
   startTime: { type: String, required: true },
   endTime: { type: String, required: true },

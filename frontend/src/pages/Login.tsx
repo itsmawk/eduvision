@@ -1,52 +1,64 @@
 import { useState } from "react";
-import { TextField, Button, Container, Typography, Card, CardContent, Box } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  Box,
+} from "@mui/material";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const [user, setUser] = useState({ username: "", password: "" });
+  const [credentials, setCredentials] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUser({ ...user, [e.target.name]: e.target.value });
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", user);
+      const res = await axios.post("http://localhost:5000/api/auth/login", credentials);
       
-      const { token, faculty, requiresUpdate } = res.data;
+      const { token, user, requiresUpdate } = res.data;
       localStorage.setItem("token", token);
-      localStorage.setItem("facultyId", faculty.id);
-  
+      localStorage.setItem("userId", user.id);
+
       Swal.fire({
         icon: "success",
-        title: `Welcome ${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name ? faculty.middle_name : ""}`.trim(),
+        title: `Welcome ${user.last_name}, ${user.first_name} ${user.middle_name ? user.middle_name : ""}`.trim(),
         showConfirmButton: false,
         timer: 2000,
       });
-  
+
       if (requiresUpdate) {
-        navigate(`/update-credentials/${faculty.id}`);
+        navigate(`/update-credentials/${user.id}`);
+      } else if (user.role?.toLowerCase() === "superadmin") {
+        navigate(`/superadmin-dashboard/${user.id}`);
+      } else if (user.role?.toLowerCase() === "faculty") {
+        navigate(`/faculty-dashboard/${user.id}`);
       } else if (
-        faculty.role?.toLowerCase() === "instructor" &&
-        faculty.status?.toLowerCase() === "permanent"
+        user.role?.toLowerCase() === "instructor" &&
+        user.status?.toLowerCase() === "permanent"
       ) {
-        navigate(`/user-dashboard/${faculty.id}`); // 👈 go to UserDashboard.tsx
+        navigate(`/user-dashboard/${user.id}`);
       } else {
-        navigate(`/dashboard/${faculty.id}`); // default dashboard
-      }   
-      
+        navigate(`/dashboard/${user.id}`);
+      }
+
     } catch (error) {
       let errorMessage = "Invalid Credentials";
-  
+
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || "Invalid Credentials";
       }
-  
+
       Swal.fire({
         icon: "error",
         title: "Oops...",
@@ -57,7 +69,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-  
 
   return (
     <Container maxWidth="xs" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>

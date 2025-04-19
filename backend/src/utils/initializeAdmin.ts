@@ -1,34 +1,34 @@
-import Faculty, { IFaculty } from '../models/Faculty';
+import User, { IUser } from '../models/User';
 import bcrypt from 'bcryptjs';
 
 const initializeAdmin = async () => {
   try {
-    console.log('Checking for admin in faculty collection...');
+    console.log('Checking for super admin in faculty collection...');
 
-    const adminExists = await Faculty.findOne({ role: 'admin' });
+    const superadminExists = await User.findOne({ role: 'superadmin' });
 
-    if (!adminExists) {
-      console.log('No admin found. Creating default admin account...');
+    if (!superadminExists) {
+      console.log('No super admin found. Creating default super admin account...');
 
       const hashedPassword = await bcrypt.hash(process.env.DEFAULT_ADMIN_PASSWORD!, 10);
-      const admin: IFaculty = new Faculty({
+      const admin: IUser = new User({
         first_name: process.env.DEFAULT_ADMIN_FIRST_NAME,
         middle_name: process.env.DEFAULT_ADMIN_MIDDLE_NAME,
         last_name: process.env.DEFAULT_ADMIN_LAST_NAME,
         username: process.env.DEFAULT_ADMIN_USERNAME!,
         email: process.env.DEFAULT_ADMIN_EMAIL!,
         password: hashedPassword,
-        role: 'admin',
+        role: 'superadmin',
         status: process.env.DEFAULT_ADMIN_STATUS,
       });
 
       await admin.save();
-      console.log('Default admin account created successfully in the faculty collection.');
+      console.log('Default super admin account created successfully in the faculty collection.');
     } else {
-      console.log('Admin account already exists in the faculty collection:', adminExists);
+      console.log('Super Admin account already exists in the faculty collection:', superadminExists);
     }
   } catch (error) {
-    console.error('Error initializing admin account:', error);
+    console.error('Error initializing super admin account:', error);
   }
 };
 

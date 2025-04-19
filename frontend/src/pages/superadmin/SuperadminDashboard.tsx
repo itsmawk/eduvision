@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   Typography,
@@ -14,74 +14,16 @@ import {
 } from '@mui/material';
 import { green, red, yellow, blue, grey } from '@mui/material/colors';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import axios from 'axios';
-import UserMain from './UserMain';
+import SuperadminMain from './SuperadminMain';
 
-interface Schedule {
-  startTime: string;
-  endTime:string;
-  room: string;
-}
-
-const FacultyDashboard: React.FC = () => {
-  const [nextSchedule, setNextSchedule] = useState<Schedule | null>(null);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const facultyId = localStorage.getItem("userId");
-
-  useEffect(() => {
-    const fetchNextSchedule = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/auth/next-schedule/${facultyId}`);
-        setNextSchedule(response.data);
-      } catch (error) {
-        console.error("No upcoming schedule or error:", error);
-        setNextSchedule(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (facultyId) {
-      fetchNextSchedule();
-    }
-  }, [facultyId]);
-
-  useEffect(() => {
-    const fetchSchedules = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/auth/schedules/today/${facultyId}`);
-        
-        if (Array.isArray(response.data)) {
-          setSchedules(response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching schedules for today:", error);
-      }
-    };
-
-    fetchSchedules();
-  }, [facultyId]);
-
-  const formatTime = (timeStr: string) => {
-    const [hour, minute] = timeStr.split(":").map(Number);
-    const date = new Date();
-    date.setHours(hour, minute);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+const SuperadminDashboard: React.FC = () => {
   return (
-    <UserMain>
-    <Box sx={{color: 'grey.900', p: { xs: 2, sm: 3, md: 1 } }}>
+    <SuperadminMain>
+    <Box sx={{ bgcolor: 'white', color: 'grey.900', p: { xs: 2, sm: 3, md: 5 } }}>
       <Box maxWidth="1200px" mx="auto">
         {/* Header */}
         <Box mb={6}>
-          <Typography variant="h4" fontWeight={600}>
+          <Typography variant="h6" fontWeight={600}>
             Attendance
           </Typography>
           <Typography variant="body2" color="text.secondary" mt={0.5}>
@@ -98,27 +40,17 @@ const FacultyDashboard: React.FC = () => {
                 Timesheet
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {today}
+                11 Mar 2019
               </Typography>
             </Box>
 
             <Box border="1px solid" borderColor="grey.300" borderRadius={1} p={2} mb={4}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600} display="block">
-                Your next schedule:
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Punch In at
               </Typography>
-                {loading ? (
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Loading...
-                  </Typography>
-                ) : nextSchedule ? (
-                  <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
-                    {formatTime(nextSchedule.startTime)} at {nextSchedule.room}
-                  </Typography>
-                ) : (
-                  <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
-                    No upcoming schedule today
-                  </Typography>
-                )}
+              <Typography variant="caption" color="text.secondary">
+                Wed, 11th Mar 2019 10.00 AM
+              </Typography>
             </Box>
 
             <Box display="flex" justifyContent="center" mb={4}>
@@ -256,25 +188,34 @@ const FacultyDashboard: React.FC = () => {
             sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
           >
             <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
-              Today's Schedule List
+              Attendance List
             </Typography>
             <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: grey[100] }}>
                     <TableCell sx={{ fontWeight: 600 }}>S. No</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Punch In</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Punch Out</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Production</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Break</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Overtime</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {schedules.map((schedule, idx) => (
-                    <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? "white" : grey[50] }}>
-                      <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
-                      <TableCell>{formatTime(schedule.startTime)}</TableCell>
-                      <TableCell>{formatTime(schedule.endTime)}</TableCell>
-                      <TableCell>{schedule.room}</TableCell>
+                  {[
+                    ['1', '19 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '2 hrs'],
+                    ['2', '20 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '0 hrs'],
+                    ['3', '21 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '0 hrs'],
+                    ['4', '22 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '0 hrs'],
+                  ].map((row, idx) => (
+                    <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
+                      {row.map((cell, i) => (
+                        <TableCell key={i} sx={{ fontWeight: i === 0 ? 600 : 400 }}>
+                          {cell}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -284,8 +225,8 @@ const FacultyDashboard: React.FC = () => {
         </Box>
       </Box>
     </Box>
-    </UserMain>
+    </SuperadminMain>
   );
 };
 
-export default FacultyDashboard;
+export default SuperadminDashboard;

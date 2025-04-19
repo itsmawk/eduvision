@@ -285,8 +285,10 @@ const FacultyInfo: React.FC = () => {
           <FormControl fullWidth margin="dense">
             <InputLabel>Role</InputLabel>
             <Select name="role" value={newFaculty.role} onChange={handleRoleChange}>
-              <MenuItem value="admin">admin</MenuItem>
-              <MenuItem value="instructor">instructor</MenuItem>
+              <MenuItem value="superadmin">Super Admin</MenuItem>
+              <MenuItem value="instructor">Instructor</MenuItem>
+              <MenuItem value="dean">Dean</MenuItem>
+              <MenuItem value="programchairperson">Program Chairperson</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>

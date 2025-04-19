@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import Faculty from "../models/Faculty";
+import UserModel from "../models/User";
 import Schedule from "../models/Schedule";
 import Subject from "../models/Subject";
 import Room from "../models/Room";
@@ -24,35 +24,35 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
 
-    const faculty = await Faculty.findOne({ username });
-    if (!faculty) {
+    const user = await UserModel.findOne({ username });
+    if (!user) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, faculty.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
     const token = jwt.sign(
-      { id: faculty._id, role: faculty.role },
+      { id: user._id, role: user.role },
       process.env.JWT_SECRET as string,
       { expiresIn: "1h" }
     );
 
     res.json({
       token,
-      faculty: {
-        id: faculty._id,
-        role: faculty.role,
-        first_name: faculty.first_name,
-        middle_name: faculty.middle_name,
-        last_name: faculty.last_name,
-        status: faculty.status,
+      user: {
+        id: user._id,
+        role: user.role,
+        first_name: user.first_name,
+        middle_name: user.middle_name,
+        last_name: user.last_name,
+        status: user.status,
       },
-      requiresUpdate: faculty.status === "temporary",
+      requiresUpdate: user.status === "temporary",
     });
   } catch (error) {
     console.error(error);
@@ -63,7 +63,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
 // GET FACULTY LIST
 router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   try {
-    const facultyList = await Faculty.find().select("first_name middle_name last_name username email role status");
+    const facultyList = await UserModel.find().select("first_name middle_name last_name username email role status");
     res.json(facultyList);
   } catch (error) {
     console.error(error);
@@ -76,14 +76,14 @@ router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void>
   try {
     const { id } = req.params;
 
-    const faculty = await Faculty.findById(id);
+    const faculty = await UserModel.findById(id);
     if (!faculty) {
-      res.status(404).json({ message: "Faculty not found" });
+      res.status(404).json({ message: "UserModel not found" });
       return;
     }
 
-    await Faculty.findByIdAndDelete(id);
-    res.json({ message: "Faculty account deleted successfully" });
+    await UserModel.findByIdAndDelete(id);
+    res.json({ message: "UserModel account deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
@@ -101,20 +101,20 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const validRoles = ["admin", "instructor"];
+    const validRoles = ["superadmin", "instructor", "programchairperson", "dean"];
     if (!validRoles.includes(role)) {
-      res.status(400).json({ message: "Invalid role. Role must be 'Admin' or 'Instructor'." });
+      res.status(400).json({ message: "Invalid role." });
       return;
     }
 
-    const existingFaculty = await Faculty.findOne({ email });
-    if (existingFaculty) {
+    const existingUser = await UserModel.findOne({ email });
+    if (existingUser) {
       res.status(400).json({ message: "Email already exists" });
       return;
     }
 
-    const existingFacultyUsername = await Faculty.findOne({ username });
-    if (existingFacultyUsername) {
+    const existingUserUsername = await UserModel.findOne({ username });
+    if (existingUserUsername) {
       res.status(400).json({ message: "Username already exists" });
       return;
     }
@@ -122,7 +122,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newFaculty = new Faculty({
+    const newUser = new UserModel({
       last_name,
       first_name,
       middle_name: middle_name || "",
@@ -133,17 +133,17 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       status: "temporary",
     });
 
-    await newFaculty.save();
+    await newUser.save();
 
     res.status(201).json({
-      _id: newFaculty._id,
-      last_name: newFaculty.last_name,
-      first_name: newFaculty.first_name,
-      middle_name: newFaculty.middle_name,
-      username: newFaculty.username,
-      email: newFaculty.email,
-      role: newFaculty.role,
-      status: newFaculty.status,
+      _id: newUser._id,
+      last_name: newUser.last_name,
+      first_name: newUser.first_name,
+      middle_name: newUser.middle_name,
+      username: newUser.username,
+      email: newUser.email,
+      role: newUser.role,
+      status: newUser.status,
     });
   } catch (error) {
     console.error(error);
@@ -153,7 +153,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
 
 router.get("/instructors", async (req: Request, res: Response): Promise<void> => {
   try {
-    const instructors = await Faculty.find({ role: "instructor" }).select("first_name middle_name last_name");
+    const instructors = await UserModel.find({ role: "faculty" }).select("first_name middle_name last_name");
     res.json(instructors);
   } catch (error) {
     console.error(error);
@@ -342,7 +342,7 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
     const instructorFullName = instructorNameMatch ? instructorNameMatch[1].trim().toUpperCase() : "";
     console.log("👨‍🏫 Parsed instructor name:", instructorFullName);
 
-    const instructor = await Faculty.findOne({
+    const instructor = await UserModel.findOne({
       $expr: {
         $regexMatch: {
           input: { $concat: ["$first_name", " ", "$middle_name", " ", "$last_name"] },

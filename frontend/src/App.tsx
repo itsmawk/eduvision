@@ -12,6 +12,10 @@ import UpdateCredentials from "./pages/user/UpdateCredentials";
 import FacultyDashboard from "./pages/user/FacultyDashboard";
 import FacultySchedule from "./pages/user/FacultySchedule";
 import { FacultyProvider } from "./context/FacultyContext";
+{/* for superadmin*/}
+import SuperadminMain from "./pages/superadmin/SuperadminMain";
+import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
+import DeanInfo from "./pages/superadmin/DeanInfo";
 
 
 export default function App() {
@@ -24,9 +28,29 @@ export default function App() {
 
         <Route path="/update-credentials/:id" element={<UpdateCredentials />} />
 
+        {/* Superadmin Routes */}
+        <Route
+          path="/superadmin-dashboard/:id"
+          element={
+            <SuperadminMain>
+              <SuperadminDashboard />
+            </SuperadminMain>
+          }
+        />
+
+        <Route
+          path="/dean-info/:id"
+          element={
+            <SuperadminMain>
+              <DeanInfo />
+            </SuperadminMain>
+          }
+        />
+
+
         {/* User Routes */}
         <Route
-          path="/user-dashboard/:id"
+          path="/faculty-dashboard/:id"
           element={
             <UserMain>
               <FacultyDashboard />
