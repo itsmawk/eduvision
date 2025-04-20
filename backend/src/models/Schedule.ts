@@ -17,6 +17,7 @@ interface ISchedule extends Document {
     thu: boolean;
     fri: boolean;
     sat: boolean;
+    sun: boolean;
   };
 }
 
@@ -37,6 +38,7 @@ const ScheduleSchema: Schema = new Schema({
     thu: { type: Boolean, default: false },
     fri: { type: Boolean, default: false },
     sat: { type: Boolean, default: false },
+    sun: { type: Boolean, default: false },
   },
 });
 
