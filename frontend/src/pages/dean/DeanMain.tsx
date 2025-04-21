@@ -4,19 +4,20 @@ import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
-import { Dashboard, Videocam, CalendarToday } from "@mui/icons-material";
+import { Dashboard, Videocam, CalendarToday, People } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
 
-const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const DeanMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activePage, setActivePage] = useState(location.pathname);
 
   const menuItems = [
-    { text: "Dashboard", icon: <Dashboard />, path: "/faculty-dashboard/:id" },
-    { text: "Schedule", icon: <CalendarToday />, path: "/user-schedule/:id" },
+    { text: "Dashboard", icon: <Dashboard />, path: "/dean-dashboard/:id" },
+    { text: "Faculty Info", icon: <People />, path: "/progchair-info/:id" },
+    { text: "Schedule", icon: <CalendarToday />, path: "/dean-schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];
 
@@ -101,4 +102,4 @@ const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   );
 };
 
-export default UserMain;
+export default DeanMain;

@@ -22,7 +22,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const handleNavigate = (path: string) => {
-    const facultyId = localStorage.getItem("facultyId");
+    const facultyId = localStorage.getItem("userId");
     if (!facultyId) {
       console.error("No faculty ID found!");
       return;
@@ -40,7 +40,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Drawer
         variant="permanent"
         sx={{
-          width: drawerWidth - 100,
+          width: drawerWidth - 130,
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: drawerWidth,
@@ -95,8 +95,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </List>
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, pl: 1, pr: 3, pb: 3 }}>
-        <Toolbar />
+      <Box component="main" sx={{ flexGrow: 1, p: 1, mt: 4 }}>
         {children}
       </Box>
     </Box>

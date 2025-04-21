@@ -1,14 +1,15 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import SignUp from "./pages/Signup";
 import Login from "./pages/Login";
-import AdminMain from "./pages/admin/AdminMain";
-import Dashboard from "./pages/admin/Dashboard";
-import FacultyInfo from "./pages/admin/FacultyInfo";
-import LiveVideo from "./pages/admin/LiveVideo";
-import Schedule from "./pages/admin/Schedule";
+{/* for programchairperson*/}
+import AdminMain from "./pages/programchairperson/AdminMain";
+import Dashboard from "./pages/programchairperson/Dashboard";
+import FacultyInfo from "./pages/programchairperson/FacultyInfo";
+import LiveVideo from "./pages/programchairperson/LiveVideo";
+import Schedule from "./pages/programchairperson/Schedule";
 import UserMain from "./pages/user/UserMain";
-import UpdateCredentials from "./pages/user/UpdateCredentials";
 {/* for faculty*/}
+import UpdateCredentials from "./pages/user/UpdateCredentials";
 import FacultyDashboard from "./pages/user/FacultyDashboard";
 import FacultySchedule from "./pages/user/FacultySchedule";
 import { FacultyProvider } from "./context/FacultyContext";
@@ -16,7 +17,9 @@ import { FacultyProvider } from "./context/FacultyContext";
 import SuperadminMain from "./pages/superadmin/SuperadminMain";
 import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
 import DeanInfo from "./pages/superadmin/DeanInfo";
-
+{/* for dean*/}
+import DeanMain from "./pages/dean/DeanMain";
+import DeanDashboard from "./pages/dean/DeanDashboard";
 
 export default function App() {
   return (
@@ -47,6 +50,16 @@ export default function App() {
           }
         />
 
+        {/* Dean Routes */}
+        <Route
+          path="/dean-dashboard/:id"
+          element={
+            <DeanMain>
+              <DeanDashboard />
+            </DeanMain>
+          }
+        />
+
 
         {/* User Routes */}
         <Route
@@ -67,7 +80,7 @@ export default function App() {
           }
         />
 
-        {/* Admin Routes */}
+        {/* Programchairperson Routes */}
         <Route
           path="/dashboard/:id"
           element={

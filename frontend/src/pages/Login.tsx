@@ -25,40 +25,42 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await axios.post("http://localhost:5000/api/auth/login", credentials);
-      
+  
       const { token, user, requiresUpdate } = res.data;
       localStorage.setItem("token", token);
       localStorage.setItem("userId", user.id);
-
+      localStorage.setItem("course", user.course);
+  
       Swal.fire({
         icon: "success",
         title: `Welcome ${user.last_name}, ${user.first_name} ${user.middle_name ? user.middle_name : ""}`.trim(),
         showConfirmButton: false,
         timer: 2000,
       });
-
+  
+      // Redirect based on role
       if (requiresUpdate) {
         navigate(`/update-credentials/${user.id}`);
       } else if (user.role?.toLowerCase() === "superadmin") {
         navigate(`/superadmin-dashboard/${user.id}`);
-      } else if (user.role?.toLowerCase() === "faculty") {
-        navigate(`/faculty-dashboard/${user.id}`);
+      } else if (user.role?.toLowerCase() === "dean") {
+        navigate(`/dean-dashboard/${user.id}`);
       } else if (
         user.role?.toLowerCase() === "instructor" &&
         user.status?.toLowerCase() === "permanent"
       ) {
-        navigate(`/user-dashboard/${user.id}`);
-      } else {
+        navigate(`/faculty-dashboard/${user.id}`);
+      } else if (user.role?.toLowerCase() === "programchairperson") {
         navigate(`/dashboard/${user.id}`);
       }
-
+  
     } catch (error) {
       let errorMessage = "Invalid Credentials";
-
+  
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || "Invalid Credentials";
       }
-
+  
       Swal.fire({
         icon: "error",
         title: "Oops...",
@@ -69,6 +71,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+  
 
   return (
     <Container maxWidth="xs" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>

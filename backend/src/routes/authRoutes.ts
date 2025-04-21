@@ -6,6 +6,7 @@ import Schedule from "../models/Schedule";
 import Subject from "../models/Subject";
 import Room from "../models/Room";
 import Section from "../models/Section";
+import Log from "../models/AttendanceLogs";
 import dotenv from "dotenv";
 import multer from "multer";
 import mammoth from "mammoth";
@@ -19,12 +20,236 @@ dotenv.config();
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
+
+// COUNT OF INSTRUCTORS (filtered by course)
+router.get("/count/instructors", async (req: Request, res: Response): Promise<void> => {
+  const course = req.query.course as string;
+
+  if (!course) {
+    res.status(400).json({ message: "Course data is missing" });
+    return;
+  }
+
+  try {
+    const count = await UserModel.countDocuments({ role: "instructor", course });
+    res.json({ count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching instructor count" });
+  }
+});
+
+
+// COUNT OF SCHEDULES TODAY
+router.get("/schedules-count/today", async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+
+    const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const dayOfWeek = days[today.getDay()];
+
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const count = await Schedule.countDocuments({
+      [`days.${dayOfWeek}`]: true,
+      semesterStartDate: { $lte: todayStr },
+      semesterEndDate: { $gte: todayStr },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    console.error("Error counting today's schedules:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// COUNT OF SCHEDULE CONFLICTS
+
+// GET TOTAL HOURS FOR EVERY FACULTY TODAY
+// GET /logs/total-hours-by-faculty
+router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const todayKey = weekdays[today.getDay()];
+
+    const result = await UserModel.aggregate([
+      {
+        $match: { role: "instructor" },
+      },
+      // Get Actual Hours (from Logs)
+      {
+        $lookup: {
+          from: "logs",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$date", todayStr] },
+                    { $ne: ["$timeIn", null] },
+                    { $ne: ["$timeout", null] },
+                  ],
+                },
+              },
+            },
+            {
+              $lookup: {
+                from: "schedules",
+                localField: "schedule",
+                foreignField: "_id",
+                as: "scheduleDetails",
+              },
+            },
+            { $unwind: "$scheduleDetails" },
+            {
+              $match: {
+                $expr: { $eq: ["$scheduleDetails.instructor", "$$userId"] },
+              },
+            },
+            {
+              $addFields: {
+                durationInHours: {
+                  $divide: [
+                    {
+                      $subtract: [
+                        { $toDate: { $concat: ["1970-01-01T", "$timeout", ":00Z"] } },
+                        { $toDate: { $concat: ["1970-01-01T", "$timeIn", ":00Z"] } },
+                      ],
+                    },
+                    1000 * 60 * 60,
+                  ],
+                },
+              },
+            },
+            {
+              $project: { durationInHours: 1 },
+            },
+          ],
+          as: "logsToday",
+        },
+      },
+      // Get Expected Hours (from Schedules)
+      {
+        $lookup: {
+          from: "schedules",
+          let: { userId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$instructor", "$$userId"],
+                },
+                [`days.${todayKey}`]: true, // filter by today’s day
+              },
+            },
+            {
+              $addFields: {
+                expectedDurationInHours: {
+                  $divide: [
+                    {
+                      $subtract: [
+                        { $toDate: { $concat: ["1970-01-01T", "$endTime", ":00Z"] } },
+                        { $toDate: { $concat: ["1970-01-01T", "$startTime", ":00Z"] } },
+                      ],
+                    },
+                    1000 * 60 * 60,
+                  ],
+                },
+              },
+            },
+            {
+              $project: { expectedDurationInHours: 1 },
+            },
+          ],
+          as: "schedulesToday",
+        },
+      },
+      {
+        $addFields: {
+          totalActualHours: {
+            $round: [{ $sum: "$logsToday.durationInHours" }, 2],
+          },
+          totalExpectedHours: {
+            $round: [{ $sum: "$schedulesToday.expectedDurationInHours" }, 2],
+          },
+        },
+      },
+      {
+        $project: {
+          facultyId: "$_id",
+          name: { $concat: ["$first_name", " ", "$last_name"] },
+          totalActualHours: 1,
+          totalExpectedHours: 1,
+        },
+      },
+    ]);
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error computing faculty hours:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/logs/all-faculties/today", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const now = new Date();
+    const todayStr = now.toLocaleDateString("en-CA");
+
+    const logsToday = await Log.find({ date: todayStr })
+      .select("timeIn timeout schedule")
+      .populate({
+        path: 'schedule',
+        select: 'instructor',
+        populate: {
+          path: 'instructor',
+          select: 'first_name last_name',
+        }
+      });
+
+    if (!logsToday || logsToday.length === 0) {
+      res.status(404).json({ message: "No logs found for today" });
+      return;
+    }
+
+    const logsWithInstructor = logsToday.map((log: any) => {
+      const { first_name, middle_name, last_name } = log.schedule?.instructor || {};
+      const fullName = `${first_name} ${middle_name ? `${middle_name} ` : ""}${last_name}`;
+
+      return {
+        timeIn: log.timeIn,
+        timeout: log.timeout,
+        instructorName: fullName || "Instructor name not found",
+      };
+    });
+
+    res.status(200).json(logsWithInstructor);
+  } catch (error) {
+    console.error("Error fetching today's logs:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
 // LOGIN ROUTE
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
 
-    const user = await UserModel.findOne({ username });
+    const user = await UserModel.findOne({ username })
+      .populate("college", "name") // populate college name only (optional)
+      .exec();
+
     if (!user) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
@@ -51,6 +276,8 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
         middle_name: user.middle_name,
         last_name: user.last_name,
         status: user.status,
+        college: user.college,
+        course: user.course || null,
       },
       requiresUpdate: user.status === "temporary",
     });
@@ -59,6 +286,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // GET FACULTY LIST
 router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
@@ -131,6 +359,8 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       password: hashedPassword,
       role,
       status: "temporary",
+      college: "67ff627e2fb6583dc49dccef", // Hardcoded College ObjectId
+      course: "bsit", // Hardcoded Course
     });
 
     await newUser.save();
@@ -144,12 +374,15 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       email: newUser.email,
       role: newUser.role,
       status: newUser.status,
+      college: newUser.college,
+      course: newUser.course,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 router.get("/instructors", async (req: Request, res: Response): Promise<void> => {
   try {

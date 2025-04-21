@@ -38,45 +38,44 @@ const FacultyDashboard: React.FC = () => {
   const facultyId = localStorage.getItem("userId");
   const [logs, setLogs] = useState<{ timeIn?: string; timeout?: string }[]>([]);
 
-useEffect(() => {
-  const fetchLogs = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/auth/logs/all/today/${facultyId}`);
-      setLogs(res.data);
-    } catch (error) {
-      console.error("Failed to fetch logs:", error);
-    }
-  };
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/auth/logs/all/today/${facultyId}`);
+        setLogs(res.data);
+      } catch (error) {
+        console.error("Failed to fetch logs:", error);
+      }
+    };
 
-  fetchLogs();
-}, []);
+    fetchLogs();
+  }, []);
 
-useEffect(() => {
-  const fetchExpectedHours = async () => {
-    try {
-      if (!facultyId) return;
+  useEffect(() => {
+    const fetchExpectedHours = async () => {
+      try {
+        if (!facultyId) return;
 
-      const response = await axios.get(
-        `http://localhost:5000/api/auth/expected-hours/today/${facultyId}`
-      );
+        const response = await axios.get(
+          `http://localhost:5000/api/auth/expected-hours/today/${facultyId}`
+        );
 
-      const {
-        totalTodayScheduleHours,
-        totalThisWeekScheduleHours,
-        totalThisMonthScheduleHours,
-      } = response.data;
+        const {
+          totalTodayScheduleHours,
+          totalThisWeekScheduleHours,
+          totalThisMonthScheduleHours,
+        } = response.data;
 
-      setExpectedToday(totalTodayScheduleHours || 0);
-      setExpectedWeek(totalThisWeekScheduleHours || 0);
-      setExpectedMonth(totalThisMonthScheduleHours || 0);
-    } catch (err) {
-      console.error("Failed to fetch expected hours", err);
-    }
-  };
+        setExpectedToday(totalTodayScheduleHours || 0);
+        setExpectedWeek(totalThisWeekScheduleHours || 0);
+        setExpectedMonth(totalThisMonthScheduleHours || 0);
+      } catch (err) {
+        console.error("Failed to fetch expected hours", err);
+      }
+    };
 
-  fetchExpectedHours();
-}, []);
-
+    fetchExpectedHours();
+  }, []);
 
   useEffect(() => {
     const fetchNextSchedule = async () => {
