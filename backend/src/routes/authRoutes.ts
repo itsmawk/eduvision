@@ -384,7 +384,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     const { username, password } = req.body;
 
     const user = await UserModel.findOne({ username })
-      .populate("college", "name") // populate college name only (optional)
+      .populate("college", "name code") // populate college name only (optional)
       .exec();
 
     if (!user) {
