@@ -25,19 +25,20 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await axios.post("http://localhost:5000/api/auth/login", credentials);
-
+  
       const { token, user, requiresUpdate } = res.data;
       localStorage.setItem("token", token);
       localStorage.setItem("userId", user.id);
       localStorage.setItem("course", user.course);
-
+  
       Swal.fire({
         icon: "success",
         title: `Welcome ${user.last_name}, ${user.first_name} ${user.middle_name ? user.middle_name : ""}`.trim(),
         showConfirmButton: false,
         timer: 2000,
       });
-
+  
+      // Redirect based on role
       if (requiresUpdate) {
         navigate(`/update-credentials/${user.id}`);
       } else if (user.role?.toLowerCase() === "superadmin") {
@@ -52,14 +53,14 @@ export default function Login() {
       } else if (user.role?.toLowerCase() === "programchairperson") {
         navigate(`/dashboard/${user.id}`);
       }
-
+  
     } catch (error) {
       let errorMessage = "Invalid Credentials";
-
+  
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || "Invalid Credentials";
       }
-
+  
       Swal.fire({
         icon: "error",
         title: "Oops...",
@@ -70,76 +71,42 @@ export default function Login() {
       setLoading(false);
     }
   };
+  
 
   return (
-    <Container
-      maxWidth="xs"
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        backgroundColor: "#153448",
-      }}
-    >
-      <Card
-        elevation={6}
-        sx={{
-          padding: 4,
-          width: "100%",
-          textAlign: "center",
-          backgroundColor: "#1E293B",
-          color: "white",
-          borderRadius: "16px", // softened edges
-        }}
-      >
+    <Container maxWidth="xs" sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+      <Card elevation={3} sx={{ padding: 3, width: "100%", textAlign: "center" }}>
         <CardContent>
-           {/* LOGO */}
-            <Box sx={{ mb: 2 }}>
-             <img
-              src="/ccms.jpg" // assuming it's in public/logo.png
-              alt="App Logo"
-              style={{ width: "80px", height: "auto", marginBottom: "16px" }}
-               />
-          </Box>
-          <Typography variant="h4" gutterBottom fontWeight="bold" color="white">
+          <Typography variant="h4" gutterBottom fontWeight="bold">
             Welcome Back
           </Typography>
-          <Typography variant="body2" color="gray" gutterBottom>
+          <Typography variant="body2" color="textSecondary" gutterBottom>
             Please enter your credentials to sign in
           </Typography>
           <Box component="form" sx={{ mt: 2 }}>
-            <TextField
-              label="Username"
-              name="username"
-              fullWidth
-              margin="normal"
-              variant="outlined"
-              onChange={handleChange}
-              InputLabelProps={{ style: { color: "#CBD5E1" } }}
-              InputProps={{ style: { color: "white" } }}
+            <TextField 
+              label="Username" 
+              name="username" 
+              fullWidth 
+              margin="normal" 
+              variant="outlined" 
+              onChange={handleChange} 
             />
-            <TextField
-              label="Password"
-              name="password"
-              type="password"
-              fullWidth
-              margin="normal"
-              variant="outlined"
-              onChange={handleChange}
-              InputLabelProps={{ style: { color: "#CBD5E1" } }}
-              InputProps={{ style: { color: "white" } }}
+            <TextField 
+              label="Password" 
+              name="password" 
+              type="password" 
+              fullWidth 
+              margin="normal" 
+              variant="outlined" 
+              onChange={handleChange} 
             />
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{
-                mt: 2,
-                py: 1.2,
-                backgroundColor: "#4C6793",
-                '&:hover': { backgroundColor: "#39557A" },
-              }}
-              onClick={handleSubmit}
+            <Button 
+              variant="contained" 
+              color="primary" 
+              fullWidth 
+              sx={{ mt: 2, py: 1.2 }}
+              onClick={handleSubmit} 
               disabled={loading}
             >
               {loading ? "Logging in..." : "Login"}
