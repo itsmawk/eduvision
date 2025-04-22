@@ -20,6 +20,7 @@ dotenv.config();
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
+
 // Fetch overlapping schedules based on shortCourseName
 router.post("/all-schedules/overlapping", async (req: Request, res: Response): Promise<void> => {
   const { shortCourseName } = req.body;
@@ -30,7 +31,6 @@ router.post("/all-schedules/overlapping", async (req: Request, res: Response): P
   }
 
   try {
-    // Get current day of the week (e.g., "mon")
     const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
     const today = dayNames[new Date().getDay()];
 
@@ -91,8 +91,7 @@ router.post("/all-schedules/overlapping", async (req: Request, res: Response): P
   }
 });
 
-
-
+// FETCH ALL SCHEDULES TODAY BASED ON COURSE
 router.post("/all-schedules/today", async (req: Request, res: Response): Promise<void> => {
   const { shortCourseName } = req.body;
 
@@ -176,7 +175,7 @@ router.get("/schedules-count/today", async (req: Request, res: Response) => {
 // COUNT OF SCHEDULE CONFLICTS
 
 // GET TOTAL HOURS FOR EVERY FACULTY TODAY
-// GET /logs/total-hours-by-faculty
+// ACTUAL AND EXPECTED HOURS OF FACULTIES
 router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Response) => {
   const { shortCourseName, courseName } = req.query;
 
@@ -428,14 +427,27 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
 
 // GET FACULTY LIST
 router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
+  const { courseName } = req.query;
+
+  if (!courseName) {
+    res.status(400).json({ message: "courseName is missing" });
+    return;
+  }
+
   try {
-    const facultyList = await UserModel.find().select("first_name middle_name last_name username email role status");
+    const facultyList = await UserModel.find({
+      role: "instructor",
+      course: courseName, // only match course
+    }).select("first_name middle_name last_name username email role status");
+
     res.json(facultyList);
   } catch (error) {
-    console.error(error);
+    console.error("Error fetching faculty by course:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
 
 // DELETE FACULTY ACCOUNT
 router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void> => {
