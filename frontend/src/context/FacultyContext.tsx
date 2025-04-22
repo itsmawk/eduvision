@@ -26,15 +26,21 @@ export const FacultyProvider: React.FC<{ children: ReactNode }> = ({ children })
   useEffect(() => {
     const fetchFaculty = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/faculty");
+        const CourseName = localStorage.getItem("course") ?? "";
+  
+        const res = await axios.get("http://localhost:5000/api/auth/faculty", {
+          params: { courseName: CourseName },
+        });
+  
         setFacultyList(res.data);
       } catch (error) {
         console.error("Error fetching faculty data:", error);
       }
     };
-
+  
     fetchFaculty();
   }, []);
+  
 
   return (
     <FacultyContext.Provider value={{ facultyList, setFacultyList }}>

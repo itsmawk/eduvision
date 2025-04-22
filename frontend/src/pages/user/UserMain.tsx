@@ -4,7 +4,7 @@ import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
-import { Dashboard, Videocam, CalendarToday } from "@mui/icons-material";
+import { Dashboard, CalendarToday } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
@@ -17,7 +17,6 @@ const UserMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/faculty-dashboard/:id" },
     { text: "Schedule", icon: <CalendarToday />, path: "/user-schedule/:id" },
-    { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];
 
   const handleNavigate = (path: string) => {

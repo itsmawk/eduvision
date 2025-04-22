@@ -64,6 +64,9 @@ const Schedule: React.FC = () => {
   const [sections, setSections] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>('');
 
+  const CourseName = localStorage.getItem("course") ?? "";
+  const ShortCourseName = CourseName.replace(/^bs/i, "").toUpperCase();
+
   type SemesterOption = {
     label: string;
     value: string;
@@ -169,40 +172,45 @@ const Schedule: React.FC = () => {
   }, [calendarView]);
 
   useEffect(() => {
-    const fetchSchedules = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/auth/schedules");
-        const schedules = response.data;
-  
-        setAllSchedules(schedules);
-  
-        const mappedEvents = schedules
-          .filter((sched: any) => sched.room === selectedLab)
-          .map((sched: any) => {
-            const title = calendarView === "dayGridMonth" 
-              ? `${sched.courseCode}`
-              : `${sched.courseCode} - ${sched.courseTitle}`;
-  
-            return {
-              id: sched._id,
-              title: title,
-              start: `${sched.date}T${sched.startTime}`,
-              end: `${sched.date}T${sched.endTime}`,
-              extendedProps: {
-                room: sched.room,
-                instructorId: sched.instructor
-              }
-            };
-          });
-  
-        setCalendarEvents(mappedEvents);
-      } catch (error) {
-        console.error("Error fetching schedules:", error);
-      }
-    };
-  
-    fetchSchedules();
-  }, [calendarView, selectedLab]);
+  const fetchSchedules = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/auth/schedules", {
+        params: {
+          shortCourseName: ShortCourseName,  // Send ShortCourseName as a query parameter
+        },
+      });
+      const schedules = response.data;
+
+      setAllSchedules(schedules);
+
+      const mappedEvents = schedules
+        .filter((sched: any) => sched.room === selectedLab)
+        .map((sched: any) => {
+          const title = calendarView === "dayGridMonth" 
+            ? `${sched.courseCode}`
+            : `${sched.courseCode} - ${sched.courseTitle}`;
+
+          return {
+            id: sched._id,
+            title: title,
+            start: `${sched.date}T${sched.startTime}`,
+            end: `${sched.date}T${sched.endTime}`,
+            extendedProps: {
+              room: sched.room,
+              instructorId: sched.instructor
+            }
+          };
+        });
+
+      setCalendarEvents(mappedEvents);
+    } catch (error) {
+      console.error("Error fetching schedules:", error);
+    }
+  };
+
+  fetchSchedules();
+}, [calendarView, selectedLab, ShortCourseName]);  // Add ShortCourseName to the dependency array
+
   
   
   useEffect(() => {

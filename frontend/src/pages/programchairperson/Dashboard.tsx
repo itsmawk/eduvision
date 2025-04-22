@@ -14,10 +14,10 @@ import {
 import { BarChart } from '@mui/x-charts/BarChart';
 import { HighlightScope } from '@mui/x-charts/context';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import BedIcon from '@mui/icons-material/Hotel';
 import PeopleIcon from '@mui/icons-material/People';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { green, grey } from '@mui/material/colors';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import axios from "axios";
@@ -31,6 +31,13 @@ const highlightScope: HighlightScope = {
   fade: 'global',
 };
 
+interface Schedule {
+  instructor: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+}
+
 
 const Dashboard: React.FC = () => {
   const [instructorCount, setinstructorCount] = useState<number | null>(null);
@@ -39,7 +46,48 @@ const Dashboard: React.FC = () => {
   const [actualHours, setActualHours] = useState<number[]>([]);
   const [facultyNames, setFacultyNames] = useState<string[]>([]);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
-  const CourseName = localStorage.getItem("course");
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [overlappingSchedules, setOverlappingSchedules] = useState<any[]>([]);
+  const [overlappingCount, setOverlappingCount] = useState(0);
+
+  const CourseName = localStorage.getItem("course") ?? "";
+  const ShortCourseName = CourseName.replace(/^bs/i, "").toUpperCase();
+
+  useEffect(() => {
+    const fetchOverlappingSchedules = async () => {
+      try {
+        const response = await axios.post("http://localhost:5000/api/auth/all-schedules/overlapping", {
+          shortCourseName: ShortCourseName,
+        });
+        console.log("Overlapping Schedules:", response.data);
+        const overlappingSchedules = response.data;
+        setOverlappingCount(overlappingSchedules.length);
+        setOverlappingSchedules(response.data);
+      } catch (error) {
+        console.error("Error fetching overlapping schedules:", error);
+      }
+    };
+
+    if (ShortCourseName) {
+      fetchOverlappingSchedules(); // Only fetch if shortCourseName is provided
+    }
+  }, [ShortCourseName]);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        const response = await axios.post("http://localhost:5000/api/auth/all-schedules/today", {
+          shortCourseName: ShortCourseName
+        });
+        console.log("Received schedule data:", response.data);
+        setSchedules(response.data);
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+      }
+    };
+  
+    fetchSchedules();
+  }, [ShortCourseName]);
   
   useEffect(() => {
     const fetchInstructorCount = async () => {
@@ -78,7 +126,12 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchChartData = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/actual-and-expected-hours-by-faculty");
+        const res = await axios.get("http://localhost:5000/api/auth/actual-and-expected-hours-by-faculty", {
+          params: {
+            courseName: CourseName,
+            shortCourseName: ShortCourseName,
+          },
+        });
   
         const data = res.data || [];
   
@@ -107,7 +160,11 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchAllFacultiesLogs = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/auth/logs/all-faculties/today`);
+        const res = await axios.get("http://localhost:5000/api/auth/logs/all-faculties/today", {
+          params: {
+            courseName: CourseName,
+          },
+        });
         setAllFacultiesLogs(res.data);
       } catch (error) {
         console.error("Failed to fetch logs:", error);
@@ -137,7 +194,7 @@ const Dashboard: React.FC = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
                 <Avatar sx={{ bgcolor: '#f3e8ff', color: '#9f7aea', mr: 2 }}>
-                  <BedIcon />
+                  <PeopleIcon />
                 </Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight="600" color="text.primary">
@@ -158,7 +215,7 @@ const Dashboard: React.FC = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
                 <Avatar sx={{ bgcolor: '#e0f2fe', color: '#38bdf8', mr: 2 }}>
-                  <PeopleIcon />
+                  <HighlightOffIcon />
                 </Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight="600" color="text.primary">
@@ -174,7 +231,7 @@ const Dashboard: React.FC = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
                 <Avatar sx={{ bgcolor: '#ffedd5', color: '#fb923c', mr: 2 }}>
-                  <ReceiptIcon />
+                  <EventAvailableIcon />
                 </Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight="600" color="text.primary">
@@ -195,14 +252,14 @@ const Dashboard: React.FC = () => {
             <Grid item xs={12} sm={6} md={3}>
               <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
                 <Avatar sx={{ bgcolor: '#fce7f3', color: '#ec4899', mr: 2 }}>
-                  <DirectionsCarIcon />
+                  <WarningAmberIcon />
                 </Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight="600" color="text.primary">
-                    0
+                  {overlappingCount !== null ? overlappingCount.toLocaleString() : "Loading..."}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Scedule Conflicts
+                    Schedule Conflicts
                   </Typography>
                 </Box>
                 <Box sx={{ marginLeft: 'auto' }}>
@@ -234,62 +291,85 @@ const Dashboard: React.FC = () => {
               Today Activity
             </Typography>
             <Box ml={1} pl={1} display="flex" flexDirection="column" gap={2}>
-              {allFacultiesLogs.map((log, index) => {
-                const entries = [];
+              {allFacultiesLogs.length === 0 ||
+              !allFacultiesLogs.some((log) => log.timeIn || log.timeout) ? (
+                <Typography variant="body2" color="textSecondary" textAlign="center">
+                  There is no current activity today.
+                </Typography>
+              ) : (
+                allFacultiesLogs.map((log, index) => {
+                  const entries = [];
 
-                if (log.timeIn) {
-                  entries.push({ label: "Time In", time: log.timeIn });
-                }
-                if (log.timeout) {
-                  entries.push({ label: "Time Out", time: log.timeout });
-                }
+                  if (log.timeIn) {
+                    entries.push({ label: "Time In", time: log.timeIn });
+                  }
+                  if (log.timeout) {
+                    entries.push({ label: "Time Out", time: log.timeout });
+                  }
 
-                return entries.map((entry, subIndex, arr) => {
-                  const parsed = dayjs(entry.time, "HH:mm");
-                  const formattedTime = parsed.isValid() ? parsed.format("hh:mm A") : "Invalid time";
+                  return entries.map((entry, subIndex, arr) => {
+                    const parsed = dayjs(entry.time, "HH:mm");
+                    const formattedTime = parsed.isValid()
+                      ? parsed.format("hh:mm A")
+                      : "Invalid time";
 
-                  const isLastItem = subIndex === arr.length - 1 && index === allFacultiesLogs.length - 1;
+                    const isLastItem =
+                      subIndex === arr.length - 1 &&
+                      index === allFacultiesLogs.length - 1;
 
-                  return (
-                    <Box key={`${index}-${subIndex}`} display="flex" position="relative" pl={3}>
-                      {/* Circle and connecting line */}
-                      <Box position="absolute" left={-12} top={0} display="flex" flexDirection="column" alignItems="center">
-                        {/* Circle */}
+                    return (
+                      <Box
+                        key={`${index}-${subIndex}`}
+                        display="flex"
+                        position="relative"
+                        pl={3}
+                      >
+                        {/* Circle and connecting line */}
                         <Box
-                          width={12}
-                          height={12}
-                          borderRadius="50%"
-                          bgcolor="white"
-                          border={`2px solid ${green[400]}`}
-                          zIndex={1}
-                          mt={0.5}
-                        />
-                        {/* Connecting line */}
-                        {!isLastItem && (
+                          position="absolute"
+                          left={-12}
+                          top={0}
+                          display="flex"
+                          flexDirection="column"
+                          alignItems="center"
+                        >
+                          {/* Circle */}
                           <Box
-                            flex={1}
-                            width={2}
-                            bgcolor={green[300]}
+                            width={12}
+                            height={12}
+                            borderRadius="50%"
+                            bgcolor="white"
+                            border={`2px solid ${green[400]}`}
+                            zIndex={1}
                             mt={0.5}
-                            style={{ minHeight: 36 }}
                           />
-                        )}
-                      </Box>
+                          {/* Connecting line */}
+                          {!isLastItem && (
+                            <Box
+                              flex={1}
+                              width={2}
+                              bgcolor={green[300]}
+                              mt={0.5}
+                              style={{ minHeight: 36 }}
+                            />
+                          )}
+                        </Box>
 
-                      {/* Entry content */}
-                      <Box>
-                        <Typography fontWeight={600} fontSize={13}>
-                          {entry.label} of {log.instructorName || "Unknown Instructor"}
-                        </Typography>
-                        <Box display="flex" alignItems="center" color="grey.500">
-                          <AccessTimeIcon sx={{ fontSize: 12, mr: 0.5 }} />
-                          <Typography variant="caption">{formattedTime}</Typography>
+                        {/* Entry content */}
+                        <Box>
+                          <Typography fontWeight={600} fontSize={13}>
+                            {entry.label} of {log.instructorName || "Unknown Instructor"}
+                          </Typography>
+                          <Box display="flex" alignItems="center" color="grey.500">
+                            <AccessTimeIcon sx={{ fontSize: 12, mr: 0.5 }} />
+                            <Typography variant="caption">{formattedTime}</Typography>
+                          </Box>
                         </Box>
                       </Box>
-                    </Box>
-                  );
-                });
-              })}
+                    );
+                  });
+                })
+              )}
             </Box>
           </Paper>
         </Box>
@@ -301,37 +381,39 @@ const Dashboard: React.FC = () => {
             sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
           >
             <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
-              Attendance List
+              All Schedules Today
             </Typography>
             <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: grey[100] }}>
                     <TableCell sx={{ fontWeight: 600 }}>S. No</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Punch In</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Punch Out</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Production</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Break</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Overtime</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {[
-                    ['1', '19 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '2 hrs'],
-                    ['2', '20 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '0 hrs'],
-                    ['3', '21 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '0 hrs'],
-                    ['4', '22 Feb 2019', '10 AM', '7 PM', '9 hrs', '1 hrs', '0 hrs'],
-                  ].map((row, idx) => (
-                    <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
-                      {row.map((cell, i) => (
-                        <TableCell key={i} sx={{ fontWeight: i === 0 ? 600 : 400 }}>
-                          {cell}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
+  {schedules.length === 0 ? (
+    <TableRow>
+      <TableCell colSpan={5} align="center">
+        No schedules found.
+      </TableCell>
+    </TableRow>
+  ) : (
+    schedules.map((schedule, idx) => (
+      <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
+        <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
+        <TableCell>{schedule.instructor}</TableCell>
+        <TableCell>{schedule.startTime}</TableCell>
+        <TableCell>{schedule.endTime}</TableCell>
+        <TableCell>{schedule.room}</TableCell>
+      </TableRow>
+    ))
+  )}
+</TableBody>
+
               </Table>
             </TableContainer>
           </Paper>
