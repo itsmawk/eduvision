@@ -100,7 +100,7 @@ export default function Login() {
               <img
                 src="/ccms.jpg" // assuming it's in public/logo.png
                 alt="App Logo"
-                style={{ width: "120px", height: "auto", marginBottom: "16px" }}
+                style={{ width: "120px", height: "auto", marginBottom: "20px" }}
               />
             </Box>
           <Typography variant="h4" gutterBottom fontWeight="bold" color="black">
