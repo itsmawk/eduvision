@@ -6,7 +6,6 @@ export interface ILog extends Document {
   status: "present" | "late" | "absent" | "excuse";
   timeIn?: string;
   timeout?: string;
-  remarks?: string;
   college: mongoose.Types.ObjectId;
   course: string;
 }
@@ -21,7 +20,6 @@ const LogSchema: Schema = new Schema({
   },
   timeIn: { type: String },
   timeout: { type: String },
-  remarks: { type: String },
   college: { type: mongoose.Schema.Types.ObjectId, ref: "College", required: true },
   course: { type: String, required: true },
 });

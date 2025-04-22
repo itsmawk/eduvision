@@ -24,6 +24,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import axios from "axios";
 
 interface ScheduleItem {
+  courseCode: string;
   courseTitle: string;
   startTime: string;
   endTime: string;
@@ -86,7 +87,7 @@ const FacultySchedule: React.FC = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       try {
-        const facultyId = localStorage.getItem("facultyId");
+        const facultyId = localStorage.getItem("userId");
         if (!facultyId || !selectedLab) return;
   
         const { data } = await axios.get(
@@ -106,6 +107,7 @@ const FacultySchedule: React.FC = () => {
             semesterStartDate,
             semesterEndDate,
             courseTitle,
+            courseCode,
             days,
             room,
           } = schedule;
@@ -130,7 +132,10 @@ const FacultySchedule: React.FC = () => {
                 if (current.getDay() === dayNum) {
                   const dateStr = current.toISOString().split("T")[0];
                   allEvents.push({
-                    title: `${courseTitle} ${room ? `(${room})` : ""}`,
+                    title:
+                      calendarView === "dayGridMonth"
+                        ? courseCode
+                        : `${courseTitle} ${room ? `(${room})` : ""}`,
                     start: `${dateStr}T${startTime}`,
                     end: `${dateStr}T${endTime}`,
                   });
@@ -148,7 +153,8 @@ const FacultySchedule: React.FC = () => {
     };
   
     fetchSchedule();
-  }, [selectedLab]);
+  }, [selectedLab, calendarView]); // <-- Add calendarView here!
+  
   
 
   useEffect(() => {

@@ -16,7 +16,7 @@ const DeanMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dean-dashboard/:id" },
-    { text: "Faculty Info", icon: <People />, path: "/progchair-info/:id" },
+    { text: "Program Chairperson Info", icon: <People />, path: "/programchair-info/:id" },
     { text: "Schedule", icon: <CalendarToday />, path: "/dean-schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];

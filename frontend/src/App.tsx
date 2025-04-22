@@ -20,6 +20,7 @@ import DeanInfo from "./pages/superadmin/DeanInfo";
 {/* for dean*/}
 import DeanMain from "./pages/dean/DeanMain";
 import DeanDashboard from "./pages/dean/DeanDashboard";
+import ProgramchairInfo from "./pages/dean/ProgramchairInfo";
 
 export default function App() {
   return (
@@ -56,6 +57,15 @@ export default function App() {
           element={
             <DeanMain>
               <DeanDashboard />
+            </DeanMain>
+          }
+        />
+
+        <Route
+          path="/programchair-info/:id"
+          element={
+            <DeanMain>
+              <ProgramchairInfo />
             </DeanMain>
           }
         />

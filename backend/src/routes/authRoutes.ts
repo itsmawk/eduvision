@@ -20,6 +20,113 @@ dotenv.config();
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
+// Fetch overlapping schedules based on shortCourseName
+router.post("/all-schedules/overlapping", async (req: Request, res: Response): Promise<void> => {
+  const { shortCourseName } = req.body;
+
+  if (!shortCourseName) {
+    res.status(400).json({ message: "shortCourseName is missing" });
+    return;
+  }
+
+  try {
+    // Get current day of the week (e.g., "mon")
+    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const today = dayNames[new Date().getDay()];
+
+    const overlappingSchedules = await Schedule.find({
+      courseCode: { $regex: `^${shortCourseName}`, $options: "i" },
+      [`days.${today}`]: true,
+    })
+      .populate("instructor", "first_name last_name")
+      .populate("section", "course section block")
+      .lean();
+
+    const timeToDate = (time: string): Date => {
+      const now = new Date();
+      const [hours, minutes] = time.split(":").map(Number);
+      now.setHours(hours, minutes, 0, 0);
+      return now;
+    };
+
+      const overlapping = overlappingSchedules.filter((schedule, idx, schedules) => {
+      const scheduleStart = timeToDate(schedule.startTime);
+      const scheduleEnd = timeToDate(schedule.endTime);
+
+      for (let i = 0; i < schedules.length; i++) {
+        if (i === idx) continue;
+
+        const otherSchedule = schedules[i];
+        const otherStart = timeToDate(otherSchedule.startTime);
+        const otherEnd = timeToDate(otherSchedule.endTime);
+
+        if (
+          (scheduleStart < otherEnd && scheduleEnd > otherStart)
+          && schedule.room === otherSchedule.room
+          && schedule.section.toString() !== otherSchedule.section.toString()
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    });
+
+    const formattedSchedules = overlapping.map((schedule) => ({
+      courseCode: schedule.courseCode,
+      courseTitle: schedule.courseTitle,
+      instructor: `${(schedule.instructor as any)?.first_name} ${(schedule.instructor as any)?.last_name}` || "N/A",
+      section: `${(schedule.section as any)?.course} ${(schedule.section as any)?.section}${(schedule.section as any)?.block} || ""}` || "N/A",
+      room: schedule.room,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      semesterStartDate: schedule.semesterStartDate,
+      semesterEndDate: schedule.semesterEndDate,
+    }));
+
+    res.status(200).json(formattedSchedules);
+  } catch (error) {
+    console.error("Error fetching overlapping schedules:", error);
+    res.status(500).json({ message: "Error fetching overlapping schedules" });
+  }
+});
+
+
+
+router.post("/all-schedules/today", async (req: Request, res: Response): Promise<void> => {
+  const { shortCourseName } = req.body;
+
+  if (!shortCourseName) {
+    res.status(400).json({ message: "shortCourseName is missing" });
+    return;
+  }
+
+  try {
+    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+    const today = dayNames[new Date().getDay()];
+
+    const schedules = await Schedule.find({
+      courseCode: { $regex: `^${shortCourseName}`, $options: "i" },
+      [`days.${today}`]: true
+    })
+      .populate("instructor", "first_name last_name")
+      .lean();
+
+    const formattedSchedules = schedules.map((schedule) => ({
+      instructor: `${(schedule.instructor as any)?.first_name} ${(schedule.instructor as any)?.last_name}` || "N/A",
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      room: schedule.room,
+    }));
+
+    res.status(200).json(formattedSchedules);
+  } catch (error) {
+    console.error("Error fetching schedules:", error);
+    res.status(500).json({ message: "Error fetching schedules" });
+  }
+});
+
+
 
 // COUNT OF INSTRUCTORS (filtered by course)
 router.get("/count/instructors", async (req: Request, res: Response): Promise<void> => {
@@ -71,6 +178,17 @@ router.get("/schedules-count/today", async (req: Request, res: Response) => {
 // GET TOTAL HOURS FOR EVERY FACULTY TODAY
 // GET /logs/total-hours-by-faculty
 router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Response) => {
+  const { shortCourseName, courseName } = req.query;
+
+  if (!shortCourseName) {
+    res.status(400).json({ message: "shortCourseName is missing" });
+    return;
+  }
+
+  if (!courseName) {
+    res.status(400).json({ message: "courseName is missing" });
+    return;
+  }
   try {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -89,7 +207,7 @@ router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Re
       {
         $lookup: {
           from: "logs",
-          let: { userId: "$_id" },
+          let: { userId: "$_id", courseParam: courseName },
           pipeline: [
             {
               $match: {
@@ -98,6 +216,7 @@ router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Re
                     { $eq: ["$date", todayStr] },
                     { $ne: ["$timeIn", null] },
                     { $ne: ["$timeout", null] },
+                    { $eq: ["$course", "$$courseParam"] }
                   ],
                 },
               },
@@ -142,14 +261,17 @@ router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Re
       {
         $lookup: {
           from: "schedules",
-          let: { userId: "$_id" },
+          let: { userId: "$_id", shortCourseParam: shortCourseName },
           pipeline: [
             {
               $match: {
                 $expr: {
-                  $eq: ["$instructor", "$$userId"],
+                  $and: [
+                    { $eq: ["$instructor", "$$userId"] },
+                    { $eq: [{ $arrayElemAt: [{ $split: ["$courseCode", " "] }, 0] }, "$$shortCourseParam"] }
+                  ]
                 },
-                [`days.${todayKey}`]: true, // filter by today’s day
+                [`days.${todayKey}`]: true,
               },
             },
             {
@@ -185,6 +307,11 @@ router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Re
         },
       },
       {
+        $match: {
+          totalExpectedHours: { $gt: 0 }
+        }
+      },
+      {
         $project: {
           facultyId: "$_id",
           name: { $concat: ["$first_name", " ", "$last_name"] },
@@ -202,11 +329,21 @@ router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Re
 });
 
 router.get("/logs/all-faculties/today", async (req: Request, res: Response): Promise<void> => {
+  const { courseName } = req.query;
+
+  if (!courseName) {
+    res.status(400).json({ message: "courseName is missing" });
+    return;
+  }
+
   try {
     const now = new Date();
     const todayStr = now.toLocaleDateString("en-CA");
 
-    const logsToday = await Log.find({ date: todayStr })
+    const logsToday = await Log.find({ 
+        date: todayStr,
+        course: courseName  // ✅ Filter by courseName
+      })
       .select("timeIn timeout schedule")
       .populate({
         path: 'schedule',
@@ -223,8 +360,8 @@ router.get("/logs/all-faculties/today", async (req: Request, res: Response): Pro
     }
 
     const logsWithInstructor = logsToday.map((log: any) => {
-      const { first_name, middle_name, last_name } = log.schedule?.instructor || {};
-      const fullName = `${first_name} ${middle_name ? `${middle_name} ` : ""}${last_name}`;
+      const { first_name, last_name } = log.schedule?.instructor || {};
+      const fullName = `${first_name} ${last_name}`.trim();
 
       return {
         timeIn: log.timeIn,
@@ -239,6 +376,7 @@ router.get("/logs/all-faculties/today", async (req: Request, res: Response): Pro
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 
 // LOGIN ROUTE
@@ -396,14 +534,25 @@ router.get("/instructors", async (req: Request, res: Response): Promise<void> =>
 
 // GET SCHEDULES ROUTE
 router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
+  const { shortCourseName } = req.query;
+
+  if (!shortCourseName) {
+    res.status(400).json({ message: "shortCourseName is missing" });
+    return;
+  }
+
   try {
-    const schedules = await Schedule.find().populate("instructor");
+    const regex = new RegExp(`^${shortCourseName}`, "i");
+    const schedules = await Schedule.find({ courseCode: { $regex: regex } })
+      .populate("instructor");
+
     res.json(schedules);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching schedules", error });
   }
 });
+
 
 // ADD NEW SCHEDULE ROUTE
 router.post("/schedules", async (req: Request, res: Response): Promise<void> => {
