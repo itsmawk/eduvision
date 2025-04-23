@@ -4,7 +4,7 @@ import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
-import { Dashboard, People, Videocam, CalendarToday } from "@mui/icons-material";
+import { Dashboard, People, Videocam, CalendarToday, Assessment } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
@@ -19,6 +19,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { text: "Faculty Info", icon: <People />, path: "/faculty-info/:id" },
     { text: "Schedule", icon: <CalendarToday />, path: "/schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
+    { text: "Generate Reports", icon: <Assessment />, path: "/faculty-reports/:id" },
   ];
 
   const handleNavigate = (path: string) => {

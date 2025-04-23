@@ -13,6 +13,10 @@ import mammoth from "mammoth";
 import fs from "fs";
 import path from "path";
 import mongoose from "mongoose";
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from "docx";
+import PizZip from "pizzip";
+import Docxtemplater from "docxtemplater";
+import { ILog } from "../models/AttendanceLogs";
 
 
 
@@ -21,75 +25,129 @@ const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
 
-// Fetch overlapping schedules based on shortCourseName
-router.post("/all-schedules/overlapping", async (req: Request, res: Response): Promise<void> => {
-  const { shortCourseName } = req.body;
-
-  if (!shortCourseName) {
-    res.status(400).json({ message: "shortCourseName is missing" });
-    return;
-  }
-
+router.post("/generate-daily-report", async (req: Request, res: Response) => {
   try {
-    const dayNames = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const today = dayNames[new Date().getDay()];
+    const { CourseName } = req.body;
 
-    const overlappingSchedules = await Schedule.find({
-      courseCode: { $regex: `^${shortCourseName}`, $options: "i" },
-      [`days.${today}`]: true,
-    })
-      .populate("instructor", "first_name last_name")
-      .populate("section", "course section block")
+    const query: any = {};
+    if (CourseName) query.course = CourseName;
+
+    const logs = await Log.find(query)
+      .populate({ path: "schedule", populate: { path: "instructor" } })
+      .populate("college")
       .lean();
 
-    const timeToDate = (time: string): Date => {
-      const now = new Date();
-      const [hours, minutes] = time.split(":").map(Number);
-      now.setHours(hours, minutes, 0, 0);
-      return now;
-    };
+    // Map log entries to table-friendly data
+    const tableData = logs.map((log) => {
+      const schedule: any = log.schedule || {};
+      const instructor = schedule?.instructor
+        ? `${schedule.instructor.first_name} ${schedule.instructor.last_name}`
+        : "N/A";
+    
+      return {
+        instructorName: instructor,
+        courseCode: schedule.courseCode || "N/A",
+        courseTitle: schedule.courseTitle || "N/A",
+        status: log.status || "N/A",
+        timeInOut: `${log.timeIn || "-"} / ${log.timeout || "-"}`,
+        room: schedule.room || "N/A",
+      };
+    });
+    
 
-      const overlapping = overlappingSchedules.filter((schedule, idx, schedules) => {
-      const scheduleStart = timeToDate(schedule.startTime);
-      const scheduleEnd = timeToDate(schedule.endTime);
-
-      for (let i = 0; i < schedules.length; i++) {
-        if (i === idx) continue;
-
-        const otherSchedule = schedules[i];
-        const otherStart = timeToDate(otherSchedule.startTime);
-        const otherEnd = timeToDate(otherSchedule.endTime);
-
-        if (
-          (scheduleStart < otherEnd && scheduleEnd > otherStart)
-          && schedule.room === otherSchedule.room
-          && schedule.section.toString() !== otherSchedule.section.toString()
-        ) {
-          return true;
-        }
-      }
-
-      return false;
+    const today = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
-    const formattedSchedules = overlapping.map((schedule) => ({
-      courseCode: schedule.courseCode,
-      courseTitle: schedule.courseTitle,
-      instructor: `${(schedule.instructor as any)?.first_name} ${(schedule.instructor as any)?.last_name}` || "N/A",
-      section: `${(schedule.section as any)?.course} ${(schedule.section as any)?.section}${(schedule.section as any)?.block} || ""}` || "N/A",
-      room: schedule.room,
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
-      semesterStartDate: schedule.semesterStartDate,
-      semesterEndDate: schedule.semesterEndDate,
-    }));
+    // Read the template
+    const templatePath = path.join(__dirname, "../../templates/DailyReports.docx");
+    const content = fs.readFileSync(templatePath, "binary");
 
-    res.status(200).json(formattedSchedules);
-  } catch (error) {
-    console.error("Error fetching overlapping schedules:", error);
-    res.status(500).json({ message: "Error fetching overlapping schedules" });
+    const zip = new PizZip(content);
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+    });
+
+    // Join rows into a table-like string (if you're not using a real table in the template)
+    const formattedRows = tableData.map(entry =>
+      `${entry.instructorName} | ${entry.courseCode} | ${entry.courseTitle} | ${entry.status} | ${entry.timeInOut} | ${entry.room}`
+    );
+
+    // Set template variables
+    doc.setData({
+      reportDate: today,
+      courseName: CourseName?.toUpperCase() || "",
+      logs: tableData,
+    });
+    
+
+    doc.render();
+
+    const buffer = doc.getZip().generate({ type: "nodebuffer" });
+
+    const outputDir = path.join(__dirname, "../generated");
+    const outputPath = path.join(outputDir, "DailyAttendanceReport.docx");
+
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    fs.writeFileSync(outputPath, buffer);
+
+    res.download(outputPath, "DailyAttendanceReport.docx");
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Error generating report:", error.stack);
+    } else {
+      console.error("Unknown error occurred:", error);
+    }
+    res.status(500).json({ message: "Error generating report" });
   }
 });
+
+
+router.post("/show-daily-report", async (req: Request, res: Response) => {
+  try {
+    const { CourseName } = req.body;
+
+    const query: any = {};
+    if (CourseName) query.course = CourseName;
+
+    const logs = await Log.find(query)
+      .populate({ path: "schedule", populate: { path: "instructor" } })
+      .populate("college")
+      .lean();
+
+    const tableData = logs.map((log) => {
+      const schedule: any = log.schedule || {};
+      const instructor = schedule?.instructor
+        ? `${schedule.instructor.first_name} ${schedule.instructor.last_name}`
+        : "N/A";
+
+      return {
+        name: instructor,
+        courseCode: schedule.courseCode || "N/A",
+        courseTitle: schedule.courseTitle || "N/A",
+        status: log.status || "N/A",
+        timeInOut: `${log.timeIn || "-"} / ${log.timeout || "-"}`,
+        room: schedule.room || "N/A",
+      };
+    });
+
+    res.status(200).json({ success: true, data: tableData });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Error fetching attendance data:", error.stack);
+    } else {
+      console.error("Unknown error occurred:", error);
+    }
+    res.status(500).json({ success: false, message: "Error fetching attendance data" });
+  }
+});
+
+
+
 
 // FETCH ALL SCHEDULES TODAY BASED ON COURSE
 router.post("/all-schedules/today", async (req: Request, res: Response): Promise<void> => {
@@ -536,7 +594,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
 
 router.get("/instructors", async (req: Request, res: Response): Promise<void> => {
   try {
-    const instructors = await UserModel.find({ role: "faculty" }).select("first_name middle_name last_name");
+    const instructors = await UserModel.find({ role: "instructor" }).select("first_name middle_name last_name");
     res.json(instructors);
   } catch (error) {
     console.error(error);

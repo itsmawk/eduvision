@@ -38,6 +38,7 @@ const FacultyInfo: React.FC = () => {
   const { facultyList, setFacultyList } = useFacultyContext();
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newFaculty, setNewFaculty] = useState({
     last_name: "",
     first_name: "",
@@ -139,8 +140,6 @@ const FacultyInfo: React.FC = () => {
       }
     }
   };
-
-  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value.toLowerCase());

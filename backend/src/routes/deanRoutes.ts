@@ -15,7 +15,7 @@ router.get("/programchairs", async (req: Request, res: Response): Promise<void> 
     }
   
     try {
-      const programChairs = await UserModel.find({ role: "programchairperson" })
+      const programChairs = await UserModel.find({ role: { $in: ["programchairperson", "instructor"] } })
         .populate({
           path: "college",
           select: "code",
@@ -24,7 +24,6 @@ router.get("/programchairs", async (req: Request, res: Response): Promise<void> 
         .select("first_name middle_name last_name username email role status course college")
         .exec();
   
-      // Filter out users where the populate match failed (college is null)
       const filteredChairs = programChairs.filter((user) => user.college);
   
       res.json(filteredChairs);
