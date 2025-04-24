@@ -13,8 +13,8 @@ const AdminHeader: React.FC = () => {
       text: "You will be logged out.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
+      confirmButtonColor: "#9F2042", // accent from your palette
+      cancelButtonColor: "#7B0D1E",
       confirmButtonText: "Yes, log out",
     }).then((result) => {
       if (result.isConfirmed) {
@@ -24,12 +24,20 @@ const AdminHeader: React.FC = () => {
   };
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: 1201 }}>
+    <AppBar position="fixed" sx={{ zIndex: 1201, backgroundColor: "#7B0D1E" }}>
       <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+        <Typography variant="h6" sx={{ flexGrow: 1, color: "#F8E5EE" }}>
           EduVision Admin Panel
         </Typography>
-        <IconButton color="inherit" onClick={handleLogout}>
+        <IconButton
+          onClick={handleLogout}
+          sx={{
+            color: "#F8E5EE",
+            "&:hover": {
+              color: "#FFD7E8", // softer hover tone
+            },
+          }}
+        >
           <Logout />
         </IconButton>
       </Toolbar>

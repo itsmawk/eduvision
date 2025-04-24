@@ -47,31 +47,9 @@ const Dashboard: React.FC = () => {
   const [facultyNames, setFacultyNames] = useState<string[]>([]);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [overlappingSchedules, setOverlappingSchedules] = useState<any[]>([]);
-  const [overlappingCount, setOverlappingCount] = useState(0);
 
   const CourseName = localStorage.getItem("course") ?? "";
   const ShortCourseName = CourseName.replace(/^bs/i, "").toUpperCase();
-
-  useEffect(() => {
-    const fetchOverlappingSchedules = async () => {
-      try {
-        const response = await axios.post("http://localhost:5000/api/auth/all-schedules/overlapping", {
-          shortCourseName: ShortCourseName,
-        });
-        console.log("Overlapping Schedules:", response.data);
-        const overlappingSchedules = response.data;
-        setOverlappingCount(overlappingSchedules.length);
-        setOverlappingSchedules(response.data);
-      } catch (error) {
-        console.error("Error fetching overlapping schedules:", error);
-      }
-    };
-
-    if (ShortCourseName) {
-      fetchOverlappingSchedules(); // Only fetch if shortCourseName is provided
-    }
-  }, [ShortCourseName]);
 
   useEffect(() => {
     const fetchSchedules = async () => {
@@ -256,7 +234,7 @@ const Dashboard: React.FC = () => {
                 </Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight="600" color="text.primary">
-                  {overlappingCount !== null ? overlappingCount.toLocaleString() : "Loading..."}
+                    0                  
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Schedule Conflicts

@@ -8,6 +8,7 @@ import FacultyInfo from "./pages/programchairperson/FacultyInfo";
 import LiveVideo from "./pages/programchairperson/LiveVideo";
 import Schedule from "./pages/programchairperson/Schedule";
 import UserMain from "./pages/user/UserMain";
+import FacultyReports from "./pages/programchairperson/FacultyReports";
 {/* for faculty*/}
 import UpdateCredentials from "./pages/user/UpdateCredentials";
 import FacultyDashboard from "./pages/user/FacultyDashboard";
@@ -64,9 +65,11 @@ export default function App() {
         <Route
           path="/programchair-info/:id"
           element={
-            <DeanMain>
-              <ProgramchairInfo />
-            </DeanMain>
+            <FacultyProvider>
+              <DeanMain>
+                <ProgramchairInfo />
+              </DeanMain>
+            </FacultyProvider>
           }
         />
 
@@ -126,6 +129,15 @@ export default function App() {
             <AdminMain>
               <Schedule />
             </AdminMain>
+          }
+        />
+
+        <Route
+          path="/faculty-reports/:id"
+          element={
+              <AdminMain>
+                <FacultyReports />
+              </AdminMain>
           }
         />
       </Routes>

@@ -31,6 +31,7 @@ export default function Login() {
       localStorage.setItem("token", token);
       localStorage.setItem("userId", user.id);
       localStorage.setItem("course", user.course);
+      localStorage.setItem("college", user.college.code);
 
       Swal.fire({
         icon: "success",

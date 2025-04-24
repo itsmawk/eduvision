@@ -1,12 +1,4 @@
-import React, { useState } from "react";
-import axios from "axios";
-import DeanMain from "./DeanMain";
-import Swal from "sweetalert2";
-import Visibility from "@mui/icons-material/Visibility";
-import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import DeleteIcon from "@mui/icons-material/Delete";
-import AddIcon from "@mui/icons-material/Add";
-import { useFacultyContext } from "../../context/FacultyContext";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -32,9 +24,73 @@ import {
   InputLabel,
   SelectChangeEvent
 } from "@mui/material";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from "@mui/icons-material/Add";
+import Swal from "sweetalert2";
+import { useFacultyContext } from "../../context/FacultyContext";
 
+import axios from 'axios';
+import DeanMain from './DeanMain';
+
+interface ProgramChair {
+  _id: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  username: string;
+  email: string;
+  status: string;
+  course: string;
+  role: string;
+  college: {
+    code: string;
+  };
+}
 
 const ProgramchairInfo: React.FC = () => {
+  const collegeCode = localStorage.getItem("college") ?? "";
+
+  const [programChairs, setProgramChairs] = useState<ProgramChair[]>([]);
+  const [filteredChairs, setFilteredChairs] = useState<ProgramChair[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchProgramChairs = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/auth/programchairs`, {
+          params: { collegeCode },
+        });
+        setProgramChairs(res.data);
+        setFilteredChairs(res.data); // Initialize filtered list
+      } catch (error) {
+        console.error("Error fetching program chairpersons:", error);
+      }
+    };
+    fetchProgramChairs();
+  }, [collegeCode]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase();
+    setSearchQuery(value);
+
+    const filtered = programChairs.filter((chair) => {
+      return (
+        chair.first_name.toLowerCase().includes(value) ||
+        (chair.middle_name?.toLowerCase().includes(value) ?? false) ||
+        chair.last_name.toLowerCase().includes(value) ||
+        chair.email.toLowerCase().includes(value) ||
+        chair.username.toLowerCase().includes(value)
+      );
+    });
+
+    setFilteredChairs(filtered);
+  };
+
+
+
   const { facultyList, setFacultyList } = useFacultyContext();
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
@@ -140,22 +196,6 @@ const ProgramchairInfo: React.FC = () => {
     }
   };
 
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(event.target.value.toLowerCase());
-  };
-
-  const filteredFacultyList = facultyList.filter((faculty) => {
-    const fullName = `${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name || ""}`.toLowerCase();
-    return (
-      fullName.includes(searchQuery) ||
-      faculty.username.toLowerCase().includes(searchQuery) ||
-      faculty.email.toLowerCase().includes(searchQuery)
-    );
-  });
-
-  
   return (
     <DeanMain>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -167,9 +207,9 @@ const ProgramchairInfo: React.FC = () => {
           placeholder="Search faculty..."
           size="small"
           sx={{ mx: 2, width: "250px" }}
+          value={searchQuery}
           onChange={handleSearch}
         />
-
         <IconButton color="primary" onClick={handleOpenModal}>
           <AddIcon />
         </IconButton>
@@ -177,39 +217,33 @@ const ProgramchairInfo: React.FC = () => {
 
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <TableContainer component={Paper} sx={{ width: "100%" }}>
+          <TableContainer component={Paper} sx={{ width: '100%' }}>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell><strong>Full Name</strong></TableCell>
                   <TableCell><strong>Username</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
+                  <TableCell><strong>College</strong></TableCell>
                   <TableCell><strong>Role</strong></TableCell>
+                  <TableCell><strong>Course</strong></TableCell>
                   <TableCell><strong>Status</strong></TableCell>
                   <TableCell><strong>Action</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredFacultyList.map((faculty) => (
-                  <TableRow 
-                    key={faculty._id}
-                    sx={{
-                      backgroundColor: selectedFaculty === faculty._id ? "#e0f7fa" : "transparent",
-                      cursor: "pointer",
-                      "&:hover": { backgroundColor: "#f1f1f1" }
-                    }}
-                  >
+                {filteredChairs.map((chair) => (
+                  <TableRow key={chair._id}>
+                    <TableCell>{`${chair.first_name} ${chair.middle_name ?? ''} ${chair.last_name}`}</TableCell>
+                    <TableCell>{chair.username}</TableCell>
+                    <TableCell>{chair.email}</TableCell>
+                    <TableCell>{chair.college?.code ?? "N/A"}</TableCell>
+                    <TableCell>{chair.role}</TableCell>
+                    <TableCell>{chair.course.toLocaleUpperCase()}</TableCell>
+                    <TableCell>{chair.status}</TableCell>
                     <TableCell>
-                      {`${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name ? faculty.middle_name : ""}`}
-                    </TableCell>
-                    <TableCell>{faculty.username}</TableCell>
-                    <TableCell>{faculty.email}</TableCell>
-                    <TableCell>{faculty.role.charAt(0).toUpperCase() + faculty.role.slice(1)}</TableCell>
-                    <TableCell>{faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)}</TableCell>
-                    <TableCell>
-                      <IconButton color="error" onClick={() => handleDeleteAccount(faculty._id)}>
-                        <DeleteIcon />
-                      </IconButton>
+                      <IconButton><EditIcon /></IconButton>
+                      <IconButton><DeleteIcon /></IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -218,7 +252,6 @@ const ProgramchairInfo: React.FC = () => {
           </TableContainer>
         </Grid>
       </Grid>
-
 
       <Dialog open={openModal} onClose={handleCloseModal}>
         <DialogTitle>Add Faculty Account</DialogTitle>
@@ -299,8 +332,10 @@ const ProgramchairInfo: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
     </DeanMain>
   );
 };
+
 
 export default ProgramchairInfo;

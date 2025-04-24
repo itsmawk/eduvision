@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import authRoutes from './routes/authRoutes';
 import facultyRoutes from './routes/facultyRoutes';
+import deanRoutes from './routes/deanRoutes';
 import superadminRoutes from './routes/superadminRoutes';
 
 
@@ -23,6 +24,7 @@ mongoose.connect(MONGO_URI).then(() => {
 app.use('/api/auth', authRoutes);
 app.use('/api/auth', facultyRoutes);
 app.use('/api/auth', superadminRoutes);
+app.use('/api/auth', deanRoutes);
 
 
 export default app;
