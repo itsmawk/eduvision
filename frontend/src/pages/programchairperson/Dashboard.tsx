@@ -11,8 +11,6 @@ import {
   TableRow,
   Card, IconButton, Grid, Avatar
 } from '@mui/material';
-import { BarChart } from '@mui/x-charts/BarChart';
-import { HighlightScope } from '@mui/x-charts/context';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import PeopleIcon from '@mui/icons-material/People';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
@@ -27,11 +25,6 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
 import AdminMain from './AdminMain';
 
-const highlightScope: HighlightScope = {
-  highlight: 'series',
-  fade: 'global',
-};
-
 interface Schedule {
   instructor: string;
   startTime: string;
@@ -43,9 +36,6 @@ interface Schedule {
 const Dashboard: React.FC = () => {
   const [instructorCount, setinstructorCount] = useState<number | null>(null);
   const [schedulesCountToday, setSchedulesCountToday] = useState<number | null>(null);
-  const [expectedHours, setExpectedHours] = useState<number[]>([]);
-  const [actualHours, setActualHours] = useState<number[]>([]);
-  const [facultyNames, setFacultyNames] = useState<string[]>([]);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
 
@@ -100,29 +90,6 @@ const Dashboard: React.FC = () => {
     if (CourseName) {
       fetchSchedulesCountToday();
     }
-  }, []);
-  
-  useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/auth/actual-and-expected-hours-by-faculty", {
-          params: {
-            courseName: CourseName,
-            shortCourseName: ShortCourseName,
-          },
-        });
-  
-        const data = res.data || [];
-  
-        setExpectedHours(data.map((item: any) => item.totalExpectedHours));
-        setActualHours(data.map((item: any) => item.totalActualHours));
-        setFacultyNames(data.map((item: any) => item.name));
-      } catch (error) {
-        console.error("Failed to fetch chart data:", error);
-      }
-    };
-  
-    fetchChartData();
   }, []);
   
   const data = [
