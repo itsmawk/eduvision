@@ -21,6 +21,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { green, grey } from '@mui/material/colors';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import axios from "axios";
+import { Chart } from 'react-google-charts';
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
@@ -124,16 +125,41 @@ const Dashboard: React.FC = () => {
     fetchChartData();
   }, []);
   
-  const series = [
-    {
-      label: "Expected schedule hours",
-      data: expectedHours,
+  const data = [
+    [
+      { type: 'string', id: 'Instructor' },
+      { type: 'string', id: 'Subject' },
+      { type: 'date', id: 'Start' },
+      { type: 'date', id: 'End' },
+    ],
+    ['Instructor A', 'Math 101', new Date(2025, 3, 25, 8, 0), new Date(2025, 3, 25, 9, 0)],
+    ['Instructor A', 'Physics 201', new Date(2025, 3, 25, 9, 0), new Date(2025, 3, 25, 10, 0)],
+    ['Instructor B', 'Chemistry 101', new Date(2025, 3, 25, 10, 0), new Date(2025, 3, 25, 11, 0)],
+    ['Instructor C', 'Biology 101', new Date(2025, 3, 25, 11, 0), new Date(2025, 3, 25, 12, 0)],
+    ['Instructor C', 'PE 101', new Date(2025, 3, 25, 12, 30), new Date(2025, 3, 25, 13, 30)],
+  ];
+
+  const options = {
+    timeline: {
+      showRowLabels: true,
+      groupByRowLabel: true, // 👈 Ensures one row per instructor
     },
-    {
-      label: "Total schedule hours",
-      data: actualHours,
+    avoidOverlappingGridLines: false,
+    hAxis: {
+      minValue: new Date(2025, 3, 25, 7, 0),
+      maxValue: new Date(2025, 3, 25, 18, 0),
+      ticks: Array.from({ length: 12 }, (_, i) => new Date(2025, 3, 25, 7 + i, 0)),
+      format: 'ha',
+      gridlines: {
+        count: 12,
+        units: {
+          hours: { format: ['ha'] },
+        },
+      },
     },
-  ].map((s) => ({ ...s, highlightScope }));
+  };
+  
+  
 
   useEffect(() => {
     const fetchAllFacultiesLogs = async () => {
@@ -249,18 +275,65 @@ const Dashboard: React.FC = () => {
             </Grid>
           </Grid>
         </Box>
-        
-        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3} mb={6}>
+
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', lg: 'repeat(3, 1fr)' }} gap={3} mb={3}>
           {/* Bar Chart */}
-          <Paper variant="outlined" sx={{ p: 3, gridColumn: { md: 'span 2' } }}>
+          <Paper variant="outlined" sx={{ p: 3, gridColumn: { md: 'span 3' } }}>
             <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
               Today Schedule Chart
             </Typography>
-            <BarChart
-              height={300}
-              xAxis={[{ scaleType: "band", data: facultyNames }]}
-              series={series}
-            />
+            <Chart
+          chartType="Timeline"
+          data={data}
+          options={options}
+          width="100%"
+          height="400px"
+        />
+          </Paper>
+
+
+        </Box>
+        
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3} mb={6}>
+        <Paper
+            variant="outlined"
+            sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
+          >
+            <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
+              All Schedules Today
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: grey[100] }}>
+                    <TableCell sx={{ fontWeight: 600 }}>S. No</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {schedules.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        No schedules found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    schedules.map((schedule, idx) => (
+                      <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
+                        <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
+                        <TableCell>{schedule.instructor}</TableCell>
+                        <TableCell>{schedule.startTime}</TableCell>
+                        <TableCell>{schedule.endTime}</TableCell>
+                        <TableCell>{schedule.room}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Paper>
 
           {/* Today Activity */}
@@ -352,50 +425,7 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Box>
 
-        {/* Attendance Table */}
-        <Box display="grid" gridTemplateColumns={{ xs: '1fr', lg: 'repeat(3, 1fr)' }} gap={3}>
-          <Paper
-            variant="outlined"
-            sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
-          >
-            <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
-              All Schedules Today
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: grey[100] }}>
-                    <TableCell sx={{ fontWeight: 600 }}>S. No</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-  {schedules.length === 0 ? (
-    <TableRow>
-      <TableCell colSpan={5} align="center">
-        No schedules found.
-      </TableCell>
-    </TableRow>
-  ) : (
-    schedules.map((schedule, idx) => (
-      <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
-        <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
-        <TableCell>{schedule.instructor}</TableCell>
-        <TableCell>{schedule.startTime}</TableCell>
-        <TableCell>{schedule.endTime}</TableCell>
-        <TableCell>{schedule.room}</TableCell>
-      </TableRow>
-    ))
-  )}
-</TableBody>
-
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Box>
+        
       </Box>
     </Box>
     </AdminMain>

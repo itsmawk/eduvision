@@ -51,7 +51,7 @@ const FacultyReports: React.FC = () => {
 
   // Placeholder for your fetched attendance rows
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
 
