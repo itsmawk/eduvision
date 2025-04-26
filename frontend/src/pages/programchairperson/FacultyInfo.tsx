@@ -6,6 +6,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import InfoIcon from '@mui/icons-material/Info';
 import { useFacultyContext } from "../../context/FacultyContext";
 import {
   Box,
@@ -32,9 +33,12 @@ import {
   InputLabel,
   SelectChangeEvent
 } from "@mui/material";
+import InfoModal from '../../components/InfoModal';
 
 
 const FacultyInfo: React.FC = () => {
+  const CourseName = localStorage.getItem("course") ?? "";
+  const CollegeName = localStorage.getItem("college") ?? "";
   const { facultyList, setFacultyList } = useFacultyContext();
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState(false);
@@ -47,6 +51,8 @@ const FacultyInfo: React.FC = () => {
     email: "",
     password: "",
     role: "instructor",
+    college: "",
+    course: "",
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -67,14 +73,29 @@ const FacultyInfo: React.FC = () => {
       email: "",
       password: random4Digit(),
       role: "instructor",
+      college: CollegeName,
+      course: CourseName,
     });
     setOpenModal(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (resetForm = true) => {
     setOpenModal(false);
-    setNewFaculty({ last_name: "", first_name: "", middle_name: "", username: "", email: "", password: "", role: "instructor" });
+    if (resetForm) {
+      setNewFaculty({
+        last_name: "",
+        first_name: "",
+        middle_name: "",
+        username: "",
+        email: "",
+        password: "",
+        role: "instructor",
+        college: "",
+        course: "",
+      });
+    }
   };
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -92,18 +113,41 @@ const FacultyInfo: React.FC = () => {
       !newFaculty.email.trim() ||
       !newFaculty.password.trim()
     ) {
-      Swal.fire({ icon: "warning", title: "Missing Fields", text: "Please fill out all required fields." });
+      handleCloseModal(false);
+      Swal.fire({
+        icon: "warning",
+        title: "Missing Fields",
+        text: "Please fill out all required fields.",
+        timer: 2000,
+        timerProgressBar: true,
+        willClose: () => {
+          setOpenModal(true);
+        },
+      });
       return;
     }
 
     try {
       const res = await axios.post("http://localhost:5000/api/auth/faculty", newFaculty);
       setFacultyList([...facultyList, res.data]);
-      Swal.fire({ icon: "success", title: "Success", text: "Faculty account added successfully!" });
+      Swal.fire({ 
+        icon: "success", 
+        title: "Success", 
+        text: "Faculty account added successfully!" });
       handleCloseModal();
     } catch (error: any) {
+      handleCloseModal(false)
       console.error("Error adding faculty account:", error);
-      Swal.fire({ icon: "error", title: "Error", text: error.response?.data?.message || "Failed to add faculty account." });
+      Swal.fire({ 
+        icon: "error", 
+        title: "Error", 
+        text: error.response?.data?.message || "Failed to add faculty account.", 
+        timer: 2000,
+        timerProgressBar: true,
+        willClose: () => {
+          setOpenModal(true);
+        }, 
+      });
     }
   };
 
@@ -154,6 +198,18 @@ const FacultyInfo: React.FC = () => {
     );
   });
 
+  const [openInfoModal, setOpenInfoModal] = useState(false);
+  const [selectedFacultyInfo, setSelectedFacultyInfo] = useState<any>(null);
+
+  const handleOpenInfoModal = (faculty: any) => {
+    setSelectedFacultyInfo(faculty);
+    setOpenInfoModal(true);
+  };
+
+  const handleCloseInfoModal = () => {
+    setSelectedFacultyInfo(null);
+    setOpenInfoModal(false);
+  };
   
   return (
     <AdminMain>
@@ -209,6 +265,17 @@ const FacultyInfo: React.FC = () => {
                       <IconButton color="error" onClick={() => handleDeleteAccount(faculty._id)}>
                         <DeleteIcon />
                       </IconButton>
+                      <>
+                        <IconButton color="primary" onClick={() => handleOpenInfoModal(faculty)}>
+                          <InfoIcon />
+                        </IconButton>
+
+                        <InfoModal 
+                          open={openInfoModal} 
+                          onClose={handleCloseInfoModal}
+                          faculty={selectedFacultyInfo}
+                        />
+                      </>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -219,7 +286,7 @@ const FacultyInfo: React.FC = () => {
       </Grid>
 
 
-      <Dialog open={openModal} onClose={handleCloseModal}>
+      <Dialog open={openModal} onClose={() => handleCloseModal()}>
         <DialogTitle>Add Faculty Account</DialogTitle>
         <DialogContent>
           <TextField 
@@ -292,7 +359,7 @@ const FacultyInfo: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={() => handleCloseModal()}>Cancel</Button>
           <Button onClick={handleAddAccount} variant="contained" color="primary">
             Add
           </Button>

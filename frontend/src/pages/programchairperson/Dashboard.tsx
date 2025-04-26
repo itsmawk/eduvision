@@ -26,10 +26,29 @@ dayjs.extend(customParseFormat);
 import AdminMain from './AdminMain';
 
 interface Schedule {
-  instructor: string;
+  courseTitle: string;
+  courseCode: string;
+  instructor: {
+    first_name: string;
+    last_name: string;
+  };
+  room: string;
   startTime: string;
   endTime: string;
-  room: string;
+  semesterStartDate: string;
+  semesterEndDate: string;
+  section: {
+    sectionName: string;
+  };
+  days: {
+    mon: boolean;
+    tue: boolean;
+    wed: boolean;
+    thu: boolean;
+    fri: boolean;
+    sat: boolean;
+    sun: boolean;
+  };
 }
 
 
@@ -38,6 +57,11 @@ const Dashboard: React.FC = () => {
   const [schedulesCountToday, setSchedulesCountToday] = useState<number | null>(null);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [chartData, setChartData] = useState<any[][]>([]);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const date = today.getDate();
 
   const CourseName = localStorage.getItem("course") ?? "";
   const ShortCourseName = CourseName.replace(/^bs/i, "").toUpperCase();
@@ -48,7 +72,7 @@ const Dashboard: React.FC = () => {
         const response = await axios.post("http://localhost:5000/api/auth/all-schedules/today", {
           shortCourseName: ShortCourseName
         });
-        console.log("Received schedule data:", response.data);
+        console.log("Received today data:", response.data);
         setSchedules(response.data);
       } catch (error) {
         console.error("Error fetching schedules:", error);
@@ -92,30 +116,53 @@ const Dashboard: React.FC = () => {
     }
   }, []);
   
-  const data = [
-    [
-      { type: 'string', id: 'Instructor' },
-      { type: 'string', id: 'Subject' },
-      { type: 'date', id: 'Start' },
-      { type: 'date', id: 'End' },
-    ],
-    ['Instructor A', 'Math 101', new Date(2025, 3, 25, 8, 0), new Date(2025, 3, 25, 9, 0)],
-    ['Instructor A', 'Physics 201', new Date(2025, 3, 25, 9, 0), new Date(2025, 3, 25, 10, 0)],
-    ['Instructor B', 'Chemistry 101', new Date(2025, 3, 25, 10, 0), new Date(2025, 3, 25, 11, 0)],
-    ['Instructor C', 'Biology 101', new Date(2025, 3, 25, 11, 0), new Date(2025, 3, 25, 12, 0)],
-    ['Instructor C', 'PE 101', new Date(2025, 3, 25, 12, 30), new Date(2025, 3, 25, 13, 30)],
-  ];
+  useEffect(() => {
+    const generateChartData = () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const date = today.getDate();
+  
+      const formattedData: any[][] = [
+        [
+          { type: 'string', id: 'Instructor' },
+          { type: 'string', id: 'Subject' },
+          { type: 'date', id: 'Start' },
+          { type: 'date', id: 'End' },
+        ]
+      ];
+  
+      schedules.forEach((schedule) => {
+        const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
+        const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
+  
+        formattedData.push([
+          `${schedule.instructor.first_name} ${schedule.instructor.last_name}`,
+          `${schedule.courseCode}`,
+          new Date(year, month, date, startHour, startMinute),
+          new Date(year, month, date, endHour, endMinute),
+        ]);
+      });
+  
+      setChartData(formattedData);
+    };
+  
+    if (schedules.length > 0) {
+      generateChartData();
+    }
+  }, [schedules]);
+
 
   const options = {
     timeline: {
       showRowLabels: true,
-      groupByRowLabel: true, // 👈 Ensures one row per instructor
+      groupByRowLabel: true,
     },
     avoidOverlappingGridLines: false,
     hAxis: {
-      minValue: new Date(2025, 3, 25, 7, 0),
-      maxValue: new Date(2025, 3, 25, 18, 0),
-      ticks: Array.from({ length: 12 }, (_, i) => new Date(2025, 3, 25, 7 + i, 0)),
+      minValue: new Date(year, month, date, 7, 0), // Today 7AM
+      maxValue: new Date(year, month, date, 18, 0), // Today 6PM
+      ticks: Array.from({ length: 12 }, (_, i) => new Date(year, month, date, 7 + i, 0)),
       format: 'ha',
       gridlines: {
         count: 12,
@@ -125,6 +172,7 @@ const Dashboard: React.FC = () => {
       },
     },
   };
+
   
   
 
@@ -193,7 +241,7 @@ const Dashboard: React.FC = () => {
                     0
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Instructor Absentees Today
+                    Instructor Absents Today
                   </Typography>
                 </Box>
               </Card>
@@ -230,7 +278,7 @@ const Dashboard: React.FC = () => {
                     0                  
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Schedule Conflicts
+                    Late Instructors
                   </Typography>
                 </Box>
                 <Box sx={{ marginLeft: 'auto' }}>
@@ -245,24 +293,32 @@ const Dashboard: React.FC = () => {
 
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', lg: 'repeat(3, 1fr)' }} gap={3} mb={3}>
           {/* Bar Chart */}
-          <Paper variant="outlined" sx={{ p: 3, gridColumn: { md: 'span 3' } }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              gridColumn: { md: 'span 3' },
+              maxHeight: 400,
+              overflow: 'auto',
+            }}
+          >
             <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
               Today Schedule Chart
             </Typography>
-            <Chart
-          chartType="Timeline"
-          data={data}
-          options={options}
-          width="100%"
-          height="400px"
-        />
+            <div style={{ width: '100%', height: 'auto' }}>
+              <Chart
+                chartType="Timeline"
+                data={chartData}
+                options={options}
+                width="100%"
+                height="auto"
+              />
+            </div>
           </Paper>
-
-
         </Box>
         
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3} mb={6}>
-        <Paper
+          <Paper
             variant="outlined"
             sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
           >
@@ -278,12 +334,14 @@ const Dashboard: React.FC = () => {
                     <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Section</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {schedules.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={7} align="center">
                         No schedules found.
                       </TableCell>
                     </TableRow>
@@ -291,10 +349,16 @@ const Dashboard: React.FC = () => {
                     schedules.map((schedule, idx) => (
                       <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
                         <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
-                        <TableCell>{schedule.instructor}</TableCell>
+                        <TableCell>
+                          {schedule.instructor 
+                            ? `${schedule.instructor.first_name} ${schedule.instructor.last_name}` 
+                            : "N/A"}
+                        </TableCell>
                         <TableCell>{schedule.startTime}</TableCell>
                         <TableCell>{schedule.endTime}</TableCell>
                         <TableCell>{schedule.room}</TableCell>
+                        <TableCell>{schedule.section?.sectionName || "N/A"}</TableCell>
+                        <TableCell>{schedule.courseTitle} ({schedule.courseCode})</TableCell>
                       </TableRow>
                     ))
                   )}
