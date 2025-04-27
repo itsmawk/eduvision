@@ -6,6 +6,7 @@ import Schedule from "../models/Schedule";
 import Subject from "../models/Subject";
 import Room from "../models/Room";
 import Section from "../models/Section";
+import CollegeModel from "../models/College";
 import Log from "../models/AttendanceLogs";
 import dotenv from "dotenv";
 import multer from "multer";
@@ -17,12 +18,21 @@ import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, Width
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { ILog } from "../models/AttendanceLogs";
-
+import nodemailer from "nodemailer";
 
 
 dotenv.config();
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
+
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
 
 router.post("/generate-daily-report", async (req: Request, res: Response) => {
@@ -37,7 +47,6 @@ router.post("/generate-daily-report", async (req: Request, res: Response) => {
       .populate("college")
       .lean();
 
-    // Map log entries to table-friendly data
     const tableData = logs.map((log) => {
       const schedule: any = log.schedule || {};
       const instructor = schedule?.instructor
@@ -61,7 +70,6 @@ router.post("/generate-daily-report", async (req: Request, res: Response) => {
       day: "numeric",
     });
 
-    // Read the template
     const templatePath = path.join(__dirname, "../../templates/DailyReports.docx");
     const content = fs.readFileSync(templatePath, "binary");
 
@@ -71,12 +79,10 @@ router.post("/generate-daily-report", async (req: Request, res: Response) => {
       linebreaks: true,
     });
 
-    // Join rows into a table-like string (if you're not using a real table in the template)
     const formattedRows = tableData.map(entry =>
       `${entry.instructorName} | ${entry.courseCode} | ${entry.courseTitle} | ${entry.status} | ${entry.timeInOut} | ${entry.room}`
     );
 
-    // Set template variables
     doc.setData({
       reportDate: today,
       courseName: CourseName?.toUpperCase() || "",
@@ -149,7 +155,7 @@ router.post("/show-daily-report", async (req: Request, res: Response) => {
 
 
 
-// FETCH ALL SCHEDULES TODAY BASED ON COURSE
+// FETCH ALL FULL SCHEDULES TODAY BASED ON COURSE
 router.post("/all-schedules/today", async (req: Request, res: Response): Promise<void> => {
   const { shortCourseName } = req.body;
 
@@ -166,22 +172,17 @@ router.post("/all-schedules/today", async (req: Request, res: Response): Promise
       courseCode: { $regex: `^${shortCourseName}`, $options: "i" },
       [`days.${today}`]: true
     })
-      .populate("instructor", "first_name last_name")
-      .lean();
+    .populate("instructor", "first_name last_name")
+    .populate("section", "sectionName") 
+    .lean();
 
-    const formattedSchedules = schedules.map((schedule) => ({
-      instructor: `${(schedule.instructor as any)?.first_name} ${(schedule.instructor as any)?.last_name}` || "N/A",
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
-      room: schedule.room,
-    }));
-
-    res.status(200).json(formattedSchedules);
+    res.status(200).json(schedules);
   } catch (error) {
     console.error("Error fetching schedules:", error);
     res.status(500).json({ message: "Error fetching schedules" });
   }
 });
+
 
 
 
@@ -230,9 +231,7 @@ router.get("/schedules-count/today", async (req: Request, res: Response) => {
   }
 });
 
-// COUNT OF SCHEDULE CONFLICTS
 
-// GET TOTAL HOURS FOR EVERY FACULTY TODAY
 // ACTUAL AND EXPECTED HOURS OF FACULTIES
 router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Response) => {
   const { shortCourseName, courseName } = req.query;
@@ -442,7 +441,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     const { username, password } = req.body;
 
     const user = await UserModel.findOne({ username })
-      .populate("college", "name code") // populate college name only (optional)
+      .populate("college", "name code")
       .exec();
 
     if (!user) {
@@ -495,7 +494,7 @@ router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   try {
     const facultyList = await UserModel.find({
       role: "instructor",
-      course: courseName, // only match course
+      course: courseName,
     }).select("first_name middle_name last_name username email role status");
 
     res.json(facultyList);
@@ -526,14 +525,25 @@ router.delete("/faculty/:id", async (req: Request, res: Response): Promise<void>
   }
 });
 
+
 // CREATE NEW FACULTY ACCOUNT
 router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
   console.log(req.body);
   try {
-    const { last_name, first_name, middle_name, email, username, password, role } = req.body;
+    const {
+      last_name,
+      first_name,
+      middle_name,
+      email,
+      username,
+      password,
+      role,
+      college: collegeCode,
+      course,
+    } = req.body;
 
-    if (!last_name || !first_name || !username || !email || !password || !role) {
-      res.status(400).json({ message: "Please provide all required fields, including role" });
+    if (!last_name || !first_name || !username || !email || !password || !role || !collegeCode || !course) {
+      res.status(400).json({ message: "Please provide all required fields, including college and course" });
       return;
     }
 
@@ -555,6 +565,12 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const collegeDoc = await CollegeModel.findOne({ code: collegeCode });
+    if (!collegeDoc) {
+      res.status(400).json({ message: "Invalid college code" });
+      return;
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -567,11 +583,35 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       password: hashedPassword,
       role,
       status: "temporary",
-      college: "67ff627e2fb6583dc49dccef", // Hardcoded College ObjectId
-      course: "bsit", // Hardcoded Course
+      college: collegeDoc._id,
+      course,
     });
 
     await newUser.save();
+
+    const mailOptions = {
+      from: 'Eduvision Team',
+      to: newUser.email,
+      subject: 'Welcome to EduVision!',
+      text: `Hello ${newUser.first_name},
+
+Your faculty account has been created successfully.
+
+Here are your login details:
+Username: ${newUser.username}
+Please login and change your password immediately.
+
+Thank you,
+EduVision Team`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Email sent:', info.response);
+      }
+    });
 
     res.status(201).json({
       _id: newUser._id,

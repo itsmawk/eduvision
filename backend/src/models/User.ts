@@ -14,9 +14,11 @@ export interface IUser extends Document {
   last_name: string;
   username: string;
   email: string;
+  gender: string;
+  birthdate: Date;
   password: string;
   role: UserRole;
-  college?: mongoose.Types.ObjectId; 
+  college?: mongoose.Types.ObjectId;
   course?: string;
   status: 'temporary' | 'permanent';
 }
@@ -27,6 +29,8 @@ const UserSchema: Schema<IUser> = new Schema({
   last_name: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
+  gender: { type: String, default: "" }, // <-- you also forgot to define gender in Schema!
+  birthdate: { type: Date, default: null },
   password: { type: String, required: true },
   role: {
     type: String,

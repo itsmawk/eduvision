@@ -30,7 +30,7 @@ export default function UpdateCredentials() {
 
       Swal.fire({ icon: "success", title: "Updated!", text: "Your credentials have been updated successfully." });
 
-      navigate(`/user-dashboard/${id}`);
+      navigate(`/faculty-dashboard/${id}`);
     } catch (error) {
       Swal.fire({ icon: "error", title: "Update Failed", text: "Could not update credentials." });
     } finally {

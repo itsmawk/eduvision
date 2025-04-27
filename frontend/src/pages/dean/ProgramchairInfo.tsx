@@ -243,7 +243,9 @@ const ProgramchairInfo: React.FC = () => {
                     <TableCell>{chair.status}</TableCell>
                     <TableCell>
                       <IconButton><EditIcon /></IconButton>
-                      <IconButton><DeleteIcon /></IconButton>
+                      <IconButton onClick={() => handleDeleteAccount(chair._id)}>
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}

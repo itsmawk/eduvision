@@ -11,8 +11,6 @@ import {
   TableRow,
   Card, IconButton, Grid, Avatar
 } from '@mui/material';
-import { BarChart } from '@mui/x-charts/BarChart';
-import { HighlightScope } from '@mui/x-charts/context';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import PeopleIcon from '@mui/icons-material/People';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
@@ -21,32 +19,49 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { green, grey } from '@mui/material/colors';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import axios from "axios";
+import { Chart } from 'react-google-charts';
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
 import AdminMain from './AdminMain';
 
-const highlightScope: HighlightScope = {
-  highlight: 'series',
-  fade: 'global',
-};
-
 interface Schedule {
-  instructor: string;
+  courseTitle: string;
+  courseCode: string;
+  instructor: {
+    first_name: string;
+    last_name: string;
+  };
+  room: string;
   startTime: string;
   endTime: string;
-  room: string;
+  semesterStartDate: string;
+  semesterEndDate: string;
+  section: {
+    sectionName: string;
+  };
+  days: {
+    mon: boolean;
+    tue: boolean;
+    wed: boolean;
+    thu: boolean;
+    fri: boolean;
+    sat: boolean;
+    sun: boolean;
+  };
 }
 
 
 const Dashboard: React.FC = () => {
   const [instructorCount, setinstructorCount] = useState<number | null>(null);
   const [schedulesCountToday, setSchedulesCountToday] = useState<number | null>(null);
-  const [expectedHours, setExpectedHours] = useState<number[]>([]);
-  const [actualHours, setActualHours] = useState<number[]>([]);
-  const [facultyNames, setFacultyNames] = useState<string[]>([]);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [chartData, setChartData] = useState<any[][]>([]);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const date = today.getDate();
 
   const CourseName = localStorage.getItem("course") ?? "";
   const ShortCourseName = CourseName.replace(/^bs/i, "").toUpperCase();
@@ -57,7 +72,7 @@ const Dashboard: React.FC = () => {
         const response = await axios.post("http://localhost:5000/api/auth/all-schedules/today", {
           shortCourseName: ShortCourseName
         });
-        console.log("Received schedule data:", response.data);
+        console.log("Received today data:", response.data);
         setSchedules(response.data);
       } catch (error) {
         console.error("Error fetching schedules:", error);
@@ -102,38 +117,64 @@ const Dashboard: React.FC = () => {
   }, []);
   
   useEffect(() => {
-    const fetchChartData = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/auth/actual-and-expected-hours-by-faculty", {
-          params: {
-            courseName: CourseName,
-            shortCourseName: ShortCourseName,
-          },
-        });
+    const generateChartData = () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const date = today.getDate();
   
-        const data = res.data || [];
+      const formattedData: any[][] = [
+        [
+          { type: 'string', id: 'Instructor' },
+          { type: 'string', id: 'Subject' },
+          { type: 'date', id: 'Start' },
+          { type: 'date', id: 'End' },
+        ]
+      ];
   
-        setExpectedHours(data.map((item: any) => item.totalExpectedHours));
-        setActualHours(data.map((item: any) => item.totalActualHours));
-        setFacultyNames(data.map((item: any) => item.name));
-      } catch (error) {
-        console.error("Failed to fetch chart data:", error);
-      }
+      schedules.forEach((schedule) => {
+        const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
+        const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
+  
+        formattedData.push([
+          `${schedule.instructor.first_name} ${schedule.instructor.last_name}`,
+          `${schedule.courseCode}`,
+          new Date(year, month, date, startHour, startMinute),
+          new Date(year, month, date, endHour, endMinute),
+        ]);
+      });
+  
+      setChartData(formattedData);
     };
   
-    fetchChartData();
-  }, []);
+    if (schedules.length > 0) {
+      generateChartData();
+    }
+  }, [schedules]);
+
+
+  const options = {
+    timeline: {
+      showRowLabels: true,
+      groupByRowLabel: true,
+    },
+    avoidOverlappingGridLines: false,
+    hAxis: {
+      minValue: new Date(year, month, date, 7, 0), // Today 7AM
+      maxValue: new Date(year, month, date, 18, 0), // Today 6PM
+      ticks: Array.from({ length: 12 }, (_, i) => new Date(year, month, date, 7 + i, 0)),
+      format: 'ha',
+      gridlines: {
+        count: 12,
+        units: {
+          hours: { format: ['ha'] },
+        },
+      },
+    },
+  };
+
   
-  const series = [
-    {
-      label: "Expected schedule hours",
-      data: expectedHours,
-    },
-    {
-      label: "Total schedule hours",
-      data: actualHours,
-    },
-  ].map((s) => ({ ...s, highlightScope }));
+  
 
   useEffect(() => {
     const fetchAllFacultiesLogs = async () => {
@@ -200,7 +241,7 @@ const Dashboard: React.FC = () => {
                     0
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Instructor Absentees Today
+                    Instructor Absents Today
                   </Typography>
                 </Box>
               </Card>
@@ -237,7 +278,7 @@ const Dashboard: React.FC = () => {
                     0                  
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Schedule Conflicts
+                    Late Instructors
                   </Typography>
                 </Box>
                 <Box sx={{ marginLeft: 'auto' }}>
@@ -249,18 +290,81 @@ const Dashboard: React.FC = () => {
             </Grid>
           </Grid>
         </Box>
-        
-        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3} mb={6}>
+
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', lg: 'repeat(3, 1fr)' }} gap={3} mb={3}>
           {/* Bar Chart */}
-          <Paper variant="outlined" sx={{ p: 3, gridColumn: { md: 'span 2' } }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 3,
+              gridColumn: { md: 'span 3' },
+              maxHeight: 400,
+              overflow: 'auto',
+            }}
+          >
             <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
               Today Schedule Chart
             </Typography>
-            <BarChart
-              height={300}
-              xAxis={[{ scaleType: "band", data: facultyNames }]}
-              series={series}
-            />
+            <div style={{ width: '100%', height: 'auto' }}>
+              <Chart
+                chartType="Timeline"
+                data={chartData}
+                options={options}
+                width="100%"
+                height="auto"
+              />
+            </div>
+          </Paper>
+        </Box>
+        
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3} mb={6}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
+          >
+            <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
+              All Schedules Today
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: grey[100] }}>
+                    <TableCell sx={{ fontWeight: 600 }}>S. No</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Section</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Course</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {schedules.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        No schedules found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    schedules.map((schedule, idx) => (
+                      <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
+                        <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
+                        <TableCell>
+                          {schedule.instructor 
+                            ? `${schedule.instructor.first_name} ${schedule.instructor.last_name}` 
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell>{schedule.startTime}</TableCell>
+                        <TableCell>{schedule.endTime}</TableCell>
+                        <TableCell>{schedule.room}</TableCell>
+                        <TableCell>{schedule.section?.sectionName || "N/A"}</TableCell>
+                        <TableCell>{schedule.courseTitle} ({schedule.courseCode})</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Paper>
 
           {/* Today Activity */}
@@ -352,50 +456,7 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Box>
 
-        {/* Attendance Table */}
-        <Box display="grid" gridTemplateColumns={{ xs: '1fr', lg: 'repeat(3, 1fr)' }} gap={3}>
-          <Paper
-            variant="outlined"
-            sx={{ p: 3, gridColumn: { xs: 'span 1', lg: 'span 2' }, overflowX: 'auto' }}
-          >
-            <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
-              All Schedules Today
-            </Typography>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: grey[100] }}>
-                    <TableCell sx={{ fontWeight: 600 }}>S. No</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Instructor</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Start Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>End Time</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Room</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-  {schedules.length === 0 ? (
-    <TableRow>
-      <TableCell colSpan={5} align="center">
-        No schedules found.
-      </TableCell>
-    </TableRow>
-  ) : (
-    schedules.map((schedule, idx) => (
-      <TableRow key={idx} sx={{ backgroundColor: idx % 2 === 0 ? 'white' : grey[50] }}>
-        <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
-        <TableCell>{schedule.instructor}</TableCell>
-        <TableCell>{schedule.startTime}</TableCell>
-        <TableCell>{schedule.endTime}</TableCell>
-        <TableCell>{schedule.room}</TableCell>
-      </TableRow>
-    ))
-  )}
-</TableBody>
-
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Box>
+        
       </Box>
     </Box>
     </AdminMain>
