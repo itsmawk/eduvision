@@ -153,8 +153,6 @@ router.post("/show-daily-report", async (req: Request, res: Response) => {
 });
 
 
-
-
 // FETCH ALL FULL SCHEDULES TODAY BASED ON COURSE
 router.post("/all-schedules/today", async (req: Request, res: Response): Promise<void> => {
   const { shortCourseName } = req.body;
@@ -232,157 +230,45 @@ router.get("/schedules-count/today", async (req: Request, res: Response) => {
 });
 
 
-// ACTUAL AND EXPECTED HOURS OF FACULTIES
-router.get("/actual-and-expected-hours-by-faculty", async (req: Request, res: Response) => {
-  const { shortCourseName, courseName } = req.query;
+router.get("/logs/faculty-today", async (req: Request, res: Response): Promise<void> => {
+  const { facultyId } = req.query;
 
-  if (!shortCourseName) {
-    res.status(400).json({ message: "shortCourseName is missing" });
+  if (!facultyId) {
+    res.status(400).json({ message: "facultyId is missing" });
     return;
   }
 
-  if (!courseName) {
-    res.status(400).json({ message: "courseName is missing" });
-    return;
-  }
   try {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const todayStr = `${yyyy}-${mm}-${dd}`;
+    // Step 1: Find all schedules where the instructor._id matches facultyId
+    const schedules = await Schedule.find({
+      instructor: facultyId,
+    });
 
-    const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-    const todayKey = weekdays[today.getDay()];
+    if (!schedules || schedules.length === 0) {
+      res.status(404).json({ message: "No schedules found for this faculty" });
+      return;
+    }
 
-    const result = await UserModel.aggregate([
-      {
-        $match: { role: "instructor" },
-      },
-      // Get Actual Hours (from Logs)
-      {
-        $lookup: {
-          from: "logs",
-          let: { userId: "$_id", courseParam: courseName },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$date", todayStr] },
-                    { $ne: ["$timeIn", null] },
-                    { $ne: ["$timeout", null] },
-                    { $eq: ["$course", "$$courseParam"] }
-                  ],
-                },
-              },
-            },
-            {
-              $lookup: {
-                from: "schedules",
-                localField: "schedule",
-                foreignField: "_id",
-                as: "scheduleDetails",
-              },
-            },
-            { $unwind: "$scheduleDetails" },
-            {
-              $match: {
-                $expr: { $eq: ["$scheduleDetails.instructor", "$$userId"] },
-              },
-            },
-            {
-              $addFields: {
-                durationInHours: {
-                  $divide: [
-                    {
-                      $subtract: [
-                        { $toDate: { $concat: ["1970-01-01T", "$timeout", ":00Z"] } },
-                        { $toDate: { $concat: ["1970-01-01T", "$timeIn", ":00Z"] } },
-                      ],
-                    },
-                    1000 * 60 * 60,
-                  ],
-                },
-              },
-            },
-            {
-              $project: { durationInHours: 1 },
-            },
-          ],
-          as: "logsToday",
-        },
-      },
-      // Get Expected Hours (from Schedules)
-      {
-        $lookup: {
-          from: "schedules",
-          let: { userId: "$_id", shortCourseParam: shortCourseName },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$instructor", "$$userId"] },
-                    { $eq: [{ $arrayElemAt: [{ $split: ["$courseCode", " "] }, 0] }, "$$shortCourseParam"] }
-                  ]
-                },
-                [`days.${todayKey}`]: true,
-              },
-            },
-            {
-              $addFields: {
-                expectedDurationInHours: {
-                  $divide: [
-                    {
-                      $subtract: [
-                        { $toDate: { $concat: ["1970-01-01T", "$endTime", ":00Z"] } },
-                        { $toDate: { $concat: ["1970-01-01T", "$startTime", ":00Z"] } },
-                      ],
-                    },
-                    1000 * 60 * 60,
-                  ],
-                },
-              },
-            },
-            {
-              $project: { expectedDurationInHours: 1 },
-            },
-          ],
-          as: "schedulesToday",
-        },
-      },
-      {
-        $addFields: {
-          totalActualHours: {
-            $round: [{ $sum: "$logsToday.durationInHours" }, 2],
-          },
-          totalExpectedHours: {
-            $round: [{ $sum: "$schedulesToday.expectedDurationInHours" }, 2],
-          },
-        },
-      },
-      {
-        $match: {
-          totalExpectedHours: { $gt: 0 }
-        }
-      },
-      {
-        $project: {
-          facultyId: "$_id",
-          name: { $concat: ["$first_name", " ", "$last_name"] },
-          totalActualHours: 1,
-          totalExpectedHours: 1,
-        },
-      },
-    ]);
+    // Step 2: Find logs where the schedule._id matches any of the schedules found in step 1
+    const scheduleIds = schedules.map(schedule => schedule._id);
+    const logs = await Log.find({
+      schedule: { $in: scheduleIds }, // Match any log where the schedule is in the list of scheduleIds
+    });
 
-    res.json(result);
+    // If no logs are found
+    if (!logs || logs.length === 0) {
+      res.status(404).json({ message: "No logs found for today for this faculty" });
+      return;
+    }
+
+    // Step 3: Return the logs with all the details
+    res.status(200).json(logs);
   } catch (error) {
-    console.error("Error computing faculty hours:", error);
+    console.error("Error fetching logs:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 router.get("/logs/all-faculties/today", async (req: Request, res: Response): Promise<void> => {
   const { courseName } = req.query;
@@ -398,7 +284,7 @@ router.get("/logs/all-faculties/today", async (req: Request, res: Response): Pro
 
     const logsToday = await Log.find({ 
         date: todayStr,
-        course: courseName  // ✅ Filter by courseName
+        course: courseName
       })
       .select("timeIn timeout schedule")
       .populate({
@@ -595,14 +481,14 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       subject: 'Welcome to EduVision!',
       text: `Hello ${newUser.first_name},
 
-Your faculty account has been created successfully.
+      Your faculty account has been created successfully.
 
-Here are your login details:
-Username: ${newUser.username}
-Please login and change your password immediately.
+      Here are your login details:
+      Username: ${newUser.username}
+      Please login and change your password immediately.
 
-Thank you,
-EduVision Team`,
+      Thank you,
+      EduVision Team`,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -662,6 +548,31 @@ router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: "Error fetching schedules", error });
   }
 });
+
+// GET SCHEDULES OF SPECIFIC FACULTY
+router.get("/schedules-faculty", async (req: Request, res: Response): Promise<void> => {
+  const { facultyId } = req.query;
+
+  if (!facultyId) {
+    res.status(400).json({ message: "facultyId is required" });
+    return;
+  }
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(facultyId as string)) {
+      res.status(400).json({ message: "Invalid facultyId format" });
+      return;
+    }
+
+    const schedules = await Schedule.find({ instructor: facultyId })
+
+    res.json(schedules);
+  } catch (error) {
+    console.error("Error fetching schedules:", error);
+    res.status(500).json({ message: "Error fetching schedules", error });
+  }
+});
+
 
 
 // ADD NEW SCHEDULE ROUTE
