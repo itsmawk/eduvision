@@ -11,17 +11,45 @@ import {
   TableRow,
   Paper,
   Typography,
+
 } from '@mui/material';
+
 import CalendarHeatmap from 'react-calendar-heatmap';
+import { IconButton } from '@mui/material';
+import Tooltip from '@mui/material/Tooltip';
 import 'react-calendar-heatmap/dist/styles.css';
 import './CustomHeatmap.css';
 import axios from 'axios';
+import Swal from 'sweetalert2';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+import weekday from "dayjs/plugin/weekday";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(weekday);
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isBetween);
+
 
 interface ModalProps {
   open: boolean;
   onClose: () => void;
   faculty: any;
 }
+
+interface Schedule {
+  courseCode: string;
+  courseTitle: string;
+  displaySection: string;
+  days: { mon: boolean; tue: boolean; wed: boolean; thu: boolean; fri: boolean; sat: boolean };
+  startTime: string;
+  endTime: string;
+  room: string;
+}
+
 
 const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
   const [schedules, setSchedules] = useState([]);
@@ -31,7 +59,117 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
   const startDate = new Date(today.getFullYear(), 0, 1);
   const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-  // Fetch schedules on component mount or when facultyId changes
+
+  const handleAddSchedule = async () => {
+    const { value: file } = await Swal.fire({
+      title: 'Upload Schedule Document',
+      input: 'file',
+      inputAttributes: {
+        accept: '.doc,.docx',
+        'aria-label': 'Upload your teaching load document',
+      },
+      showCancelButton: true,
+      confirmButtonText: 'Upload',
+      preConfirm: (file) => {
+        if (!file) {
+          Swal.showValidationMessage('You need to select a file');
+        }
+        return file;
+      },
+    });
+  
+    if (file) {
+      const formData = new FormData();
+      formData.append('scheduleDocument', file);
+  
+      try {
+        const { data } = await axios.post('http://localhost:5000/api/auth/uploadScheduleDocument', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+  
+        const scheduleData: Schedule[] = data.data;
+  
+        let tableHtml = `
+          <table style="width:100%; border: 1px solid #ddd; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>Section</th>
+                <th>Days</th>
+                <th>Time</th>
+                <th>Room</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+  
+        scheduleData.forEach((schedule: Schedule) => {
+          const days = Object.keys(schedule.days)
+            .filter((day) => schedule.days[day as keyof typeof schedule.days])
+            .join(", ");
+  
+          tableHtml += `
+            <tr>
+              <td>${schedule.courseCode}</td>
+              <td>${schedule.courseTitle}</td>
+              <td>${schedule.displaySection}</td>
+              <td>${days}</td>
+              <td>${schedule.startTime} – ${schedule.endTime}</td>
+              <td>${schedule.room}</td>
+            </tr>
+          `;
+        });
+  
+        tableHtml += `</tbody></table>`;
+  
+        const confirmResult = await Swal.fire({
+          title: 'Confirm upload schedule?',
+          html: `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <p><strong>Instructor:</strong> ${data.instructorName}</p>
+              <p><strong>Semester & AY:</strong> ${data.semester}, AY ${data.academicYear}</p>
+            </div>
+            ${tableHtml}
+          `,
+          showCancelButton: true,
+          confirmButtonText: 'Confirm Upload',
+          width: 800,
+          scrollbarPadding: false,
+        });
+  
+        if (confirmResult.isConfirmed) {
+          await axios.post('http://localhost:5000/api/auth/confirmSchedules', { schedules: scheduleData });
+  
+          Swal.fire({
+            icon: 'success',
+            title: 'Schedules Uploaded!',
+            text: 'The schedules have been successfully uploaded to the database.',
+          });
+        }
+  
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: error.response?.data?.message || 'Something went wrong.',
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: 'An unknown error occurred.',
+          });
+        }
+      }
+    }
+  };
+  
+
+
   useEffect(() => {
     const fetchSchedules = async () => {
       if (!faculty?._id) return;
@@ -50,7 +188,6 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
     fetchSchedules();
   }, [faculty?._id]);
 
-  // Fetch logs on component mount or when facultyId changes
   useEffect(() => {
     const fetchLogs = async () => {
       if (!faculty?._id) return;
@@ -71,7 +208,6 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
 
   if (!faculty) return null;
 
-  // Process the logs to get count per day
   const processLogsForHeatmap = () => {
     const logCounts: { [key: string]: number } = {};
 
@@ -84,7 +220,6 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
       }
     });
 
-    // Convert to the format expected by react-calendar-heatmap
     return Object.keys(logCounts).map(date => ({
       date,
       count: logCounts[date],
@@ -94,15 +229,19 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
   const values = processLogsForHeatmap();
 
   return (
-    <Modal open={open} onClose={onClose}>
+    <Modal open={open} onClose={onClose} BackdropProps={{
+      style: {
+        backgroundColor: 'rgba(0, 0, 0, 0.2)', // adjust opacity here (0.2 is lighter than default 0.5)
+      },
+    }}>
       <Box
         sx={{
           position: 'absolute',
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          bgcolor: 'background.paper',
-          boxShadow: 24,
+          bgcolor: '#F8E5EE',
+          boxShadow: 10,
           p: 4,
           maxWidth: 1100,
           width: '90%',
@@ -111,12 +250,27 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
           gap: 3,
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">
-            Faculty Information of <span style={{ fontWeight: 'bold' }}>{`${faculty.last_name}, ${faculty.first_name}`}</span>
+            Faculty Information of{' '}
+            <span style={{ fontWeight: 'bold' }}>{`${faculty.last_name}, ${faculty.first_name}`}</span>
           </Typography>
-        </Box>
 
+          {/* Icons aligned to the right */}
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="Upload schedule manually" arrow>
+              <IconButton color="primary" onClick={handleAddSchedule}>
+                <AddCircleOutlineIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Upload schedule by docx" arrow>
+              <IconButton color="primary" onClick={handleAddSchedule}>
+                <FileUploadIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+        
         <Box
           sx={{
             display: 'flex',
@@ -187,7 +341,7 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
           {/* Right Column: Faculty Schedules */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Faculty Schedules Table */}
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ maxHeight: 440, overflowY: 'auto' }}>
               <Table size="small" aria-label="faculty schedules table">
                 <TableHead>
                   <TableRow>
@@ -195,6 +349,7 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
                     <TableCell sx={{ fontWeight: 'bold' }}>Course Title</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Days</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Section</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Room</TableCell>
                   </TableRow>
                 </TableHead>
@@ -205,13 +360,28 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
                         <TableCell>{schedule.courseCode}</TableCell>
                         <TableCell>{schedule.courseTitle}</TableCell>
                         <TableCell>
-                          {Object.entries(schedule.days)
-                            .filter(([_, isActive]) => isActive)
-                            .map(([day]) => day.charAt(0).toUpperCase() + day.slice(1))
-                            .join(', ')}
+                          {(() => {
+                            const dayAbbreviations: { [key: string]: string } = {
+                              sun: 'Su',
+                              mon: 'M',
+                              tue: 'T',
+                              wed: 'W',
+                              thu: 'Th',
+                              fri: 'F',
+                              sat: 'S',
+                            };
+
+                            return Object.entries(schedule.days)
+                              .filter(([_, isActive]) => isActive)
+                              .map(([day]) => dayAbbreviations[day.toLowerCase()] || '')
+                              .join('');
+                          })()}
                         </TableCell>
                         <TableCell>
                           {schedule.startTime} - {schedule.endTime}
+                        </TableCell>
+                        <TableCell>
+                          {schedule.section?.course} - {schedule.section?.section}{schedule.section?.block}
                         </TableCell>
                         <TableCell>{schedule.room}</TableCell>
                       </TableRow>
@@ -233,6 +403,8 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
           Close
         </Button>
       </Box>
+
+
     </Modal>
   );
 };

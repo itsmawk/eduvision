@@ -38,7 +38,9 @@ interface Schedule {
   semesterStartDate: string;
   semesterEndDate: string;
   section: {
-    sectionName: string;
+    course: string;
+    section: string;
+    block: string;
   };
   days: {
     mon: boolean;
@@ -357,7 +359,11 @@ const Dashboard: React.FC = () => {
                         <TableCell>{schedule.startTime}</TableCell>
                         <TableCell>{schedule.endTime}</TableCell>
                         <TableCell>{schedule.room}</TableCell>
-                        <TableCell>{schedule.section?.sectionName || "N/A"}</TableCell>
+                        <TableCell>
+                          {schedule.section 
+                            ? `${schedule.section.course} - ${schedule.section.section}${schedule.section.block}`
+                            : "N/A"}
+                        </TableCell>
                         <TableCell>{schedule.courseTitle} ({schedule.courseCode})</TableCell>
                       </TableRow>
                     ))

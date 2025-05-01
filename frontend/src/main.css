@@ -4,3 +4,8 @@ body {
     background-color:  #4d0000;
     
   }
+
+  .swal2-container {
+    z-index: 2000 !important;
+  }
+  

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import AdminMain from "./AdminMain";
 import Swal from "sweetalert2";
@@ -69,7 +69,7 @@ const FacultyInfo: React.FC = () => {
       last_name: "",
       first_name: "",
       middle_name: "",
-      username: random4Digit(),
+      username: "",
       email: "",
       password: random4Digit(),
       role: "instructor",
@@ -210,13 +210,31 @@ const FacultyInfo: React.FC = () => {
     setSelectedFacultyInfo(null);
     setOpenInfoModal(false);
   };
+
+  const generateUsername = (firstName: string, lastName: string) => {
+    const first = firstName.substring(0, 3).toUpperCase();
+    const last = lastName.substring(0, 3).toUpperCase();
+    return first + last;
+  };
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (newFaculty.first_name && newFaculty.last_name) {
+        const username = generateUsername(newFaculty.first_name, newFaculty.last_name);
+        setNewFaculty(prev => ({ ...prev, username }));
+      }
+    }, 2000);
+  
+    return () => clearTimeout(timer);
+  }, [newFaculty.first_name, newFaculty.last_name]);
+  
   
   return (
     <AdminMain>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography variant="h4" fontWeight="bold" color="#333" gutterBottom>
-          Faculty Information
-        </Typography>
+      <Typography variant="h4" fontWeight="bold" color="#333" gutterBottom>
+        Faculty Information {CourseName && `- ${CourseName.toUpperCase()}`}
+      </Typography>
         <TextField
           variant="outlined"
           placeholder="Search faculty..."
@@ -320,6 +338,9 @@ const FacultyInfo: React.FC = () => {
             value={newFaculty.username} 
             onChange={handleInputChange} 
             margin="dense" 
+            InputProps={{
+              readOnly: true,
+            }} 
           />
           <TextField 
             fullWidth 
@@ -350,11 +371,13 @@ const FacultyInfo: React.FC = () => {
           />
           <FormControl fullWidth margin="dense">
             <InputLabel>Role</InputLabel>
-            <Select name="role" value={newFaculty.role} onChange={handleRoleChange}>
-              <MenuItem value="superadmin">Super Admin</MenuItem>
+            <Select
+              name="role"
+              value={newFaculty.role}
+              onChange={handleRoleChange}
+              disabled // 👈 This disables the dropdown
+            >
               <MenuItem value="instructor">Instructor</MenuItem>
-              <MenuItem value="dean">Dean</MenuItem>
-              <MenuItem value="programchairperson">Program Chairperson</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>
