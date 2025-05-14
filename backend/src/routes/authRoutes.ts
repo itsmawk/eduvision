@@ -171,7 +171,7 @@ router.post("/all-schedules/today", async (req: Request, res: Response): Promise
       [`days.${today}`]: true
     })
     .populate("instructor", "first_name last_name")
-    .populate("section", "sectionName") 
+    .populate("section", "course section block") 
     .lean();
 
     res.status(200).json(schedules);
@@ -549,7 +549,6 @@ router.get("/schedules", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// GET SCHEDULES OF SPECIFIC FACULTY
 router.get("/schedules-faculty", async (req: Request, res: Response): Promise<void> => {
   const { facultyId } = req.query;
 
@@ -565,6 +564,10 @@ router.get("/schedules-faculty", async (req: Request, res: Response): Promise<vo
     }
 
     const schedules = await Schedule.find({ instructor: facultyId })
+      .populate({
+        path: 'section', // assuming 'section' is the field that references a section
+        select: 'course section block', // select the fields you need (course, section, block)
+      });
 
     res.json(schedules);
   } catch (error) {
@@ -572,6 +575,7 @@ router.get("/schedules-faculty", async (req: Request, res: Response): Promise<vo
     res.status(500).json({ message: "Error fetching schedules", error });
   }
 });
+
 
 
 
@@ -763,8 +767,21 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
 
     console.log("✅ Instructor found:", `${instructor.first_name} ${instructor.middle_name} ${instructor.last_name}`);
 
-    const lines = text.split("\n").map(line => line.trim()).filter(Boolean);
-    console.log("🔍 Total extracted lines:", lines.length);
+    // Extract only the portion of text after the instructor's name
+const instructorIndex = text.toLowerCase().indexOf("name of instructor:");
+if (instructorIndex === -1) {
+  res.status(400).json({ message: "Instructor name not found in document." });
+  return;
+}
+
+// Slice the text starting from after the instructor's name
+const linesAfterInstructor = text
+  .slice(instructorIndex)
+  .split("\n")
+  .map(line => line.trim())
+  .filter(Boolean);
+
+console.log("🔍 Total relevant lines after instructor name:", linesAfterInstructor.length);
 
     let currentCourseCode = "";
     let currentCourseTitle = "";
@@ -780,14 +797,14 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
       sat: /S/.test(dayStr),
     });
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (let i = 0; i < linesAfterInstructor.length; i++) {
+      const line = linesAfterInstructor[i];
 
       const courseCodeMatch = line.match(/^(IS|IT)\s*\d{3}/);
       if (courseCodeMatch) {
         currentCourseCode = courseCodeMatch[0];
-        const courseLine = lines[i + 1] || "";
-        currentCourseTitle = lines[i + 1]?.split("(")[0]?.trim() || "";
+        const courseLine = linesAfterInstructor[i + 1] || "";
+        currentCourseTitle = linesAfterInstructor[i + 1]?.split("(")[0]?.trim() || "";
         console.log("📘 Found course:", currentCourseCode, "-", currentCourseTitle);
 
         const sectionMatch = courseLine.match(/\(([^)]+)\)/);
@@ -800,7 +817,7 @@ router.post("/uploadScheduleDocument", upload.single("scheduleDocument"), async 
       const timeMatch = line.match(/(\d{2}:\d{2})\s*–\s*(\d{2}:\d{2})\s*\((lec|lab)\)/i);
       if (timeMatch) {
         const [ , startTime, endTime, type ] = timeMatch;
-        const dayStr = lines[i + 1] || "";
+        const dayStr = linesAfterInstructor[i + 1] || "";
         const days = getDaysObj(dayStr);
 
         const [courseCodePart, sectionBlock] = currentSection.split(" ");
