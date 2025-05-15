@@ -200,7 +200,7 @@ const ProgramchairInfo: React.FC = () => {
     <DeanMain>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
         <Typography variant="h4" fontWeight="bold" color="#333" gutterBottom>
-          Faculty Information
+          {collegeCode ? `${collegeCode} Staff Information` : "Faculty Information"}
         </Typography>
         <TextField
           variant="outlined"

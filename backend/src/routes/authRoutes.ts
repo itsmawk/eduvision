@@ -34,6 +34,26 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+router.get('/logs/today', async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`; // Format: YYYY-MM-DD
+
+    const logs = await Log.find({ date: today })
+      .populate('schedule')
+      .populate('college');
+
+    res.status(200).json(logs);
+  } catch (error) {
+    console.error("Error fetching today's logs:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 
 router.post("/generate-daily-report", async (req: Request, res: Response) => {
   try {
@@ -485,6 +505,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
 
       Here are your login details:
       Username: ${newUser.username}
+      Password: ${password}
       Please login and change your password immediately.
 
       Thank you,
@@ -575,9 +596,6 @@ router.get("/schedules-faculty", async (req: Request, res: Response): Promise<vo
     res.status(500).json({ message: "Error fetching schedules", error });
   }
 });
-
-
-
 
 // ADD NEW SCHEDULE ROUTE
 router.post("/schedules", async (req: Request, res: Response): Promise<void> => {

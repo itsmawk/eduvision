@@ -10,13 +10,14 @@ import AdminHeader from "../../components/AdminHeader";
 const drawerWidth = 260;
 
 const DeanMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const CollegeName = localStorage.getItem("college") ?? "";
   const navigate = useNavigate();
   const location = useLocation();
   const [activePage, setActivePage] = useState(location.pathname);
 
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dean-dashboard/:id" },
-    { text: "Program Chairperson Info", icon: <People />, path: "/programchair-info/:id" },
+    { text: `${CollegeName} Staff Info`, icon: <People />, path: "/programchair-info/:id" },
     { text: "Schedule", icon: <CalendarToday />, path: "/dean-schedule/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
   ];

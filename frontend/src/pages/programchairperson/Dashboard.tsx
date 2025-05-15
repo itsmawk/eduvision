@@ -181,19 +181,25 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchAllFacultiesLogs = async () => {
       try {
+        console.log("Sending request to fetch logs for course:", CourseName);
+  
         const res = await axios.get("http://localhost:5000/api/auth/logs/all-faculties/today", {
           params: {
             courseName: CourseName,
           },
         });
+  
+        console.log("Logs fetched successfully:", res.data);
+  
         setAllFacultiesLogs(res.data);
       } catch (error) {
         console.error("Failed to fetch logs:", error);
       }
     };
-
+  
     fetchAllFacultiesLogs();
   }, []);
+  
 
   return (
     <AdminMain>

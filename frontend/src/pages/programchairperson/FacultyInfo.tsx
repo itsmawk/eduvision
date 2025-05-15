@@ -255,8 +255,6 @@ const FacultyInfo: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell><strong>Full Name</strong></TableCell>
-                  <TableCell><strong>Username</strong></TableCell>
-                  <TableCell><strong>Email</strong></TableCell>
                   <TableCell><strong>Role</strong></TableCell>
                   <TableCell><strong>Status</strong></TableCell>
                   <TableCell><strong>Action</strong></TableCell>
@@ -275,8 +273,6 @@ const FacultyInfo: React.FC = () => {
                     <TableCell>
                       {`${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name ? faculty.middle_name : ""}`}
                     </TableCell>
-                    <TableCell>{faculty.username}</TableCell>
-                    <TableCell>{faculty.email}</TableCell>
                     <TableCell>{faculty.role.charAt(0).toUpperCase() + faculty.role.slice(1)}</TableCell>
                     <TableCell>{faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)}</TableCell>
                     <TableCell>

@@ -14,7 +14,6 @@ import {
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import PeopleIcon from '@mui/icons-material/People';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { green, grey } from '@mui/material/colors';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -54,7 +53,7 @@ interface Schedule {
 
 const DeanDashboard: React.FC = () => {
   const [instructorCount, setinstructorCount] = useState<number | null>(null);
-  const [schedulesCountToday, setSchedulesCountToday] = useState<number | null>(null);
+  const [programchairCount, setProgramChairCount] = useState<number | null>(null);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [chartData, setChartData] = useState<any[][]>([]);
@@ -86,36 +85,24 @@ const DeanDashboard: React.FC = () => {
   useEffect(() => {
     const fetchInstructorCount = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/auth/count/instructors`, {
-          params: { course: CourseName }
+        const response = await axios.get("http://localhost:5000/api/auth/count-all/instructors", {
+          params: { CollegeName }
         });
-        setinstructorCount(response.data.count);
+  
+        console.log("Counts response:", response.data);
+  
+        setinstructorCount(response.data.instructorCount);
+        setProgramChairCount(response.data.programChairCount); // Make sure this state exists
       } catch (error) {
-        console.error("Failed to fetch instructor count:", error);
+        console.error("Failed to fetch instructor/program chair count:", error);
       }
     };
   
-    if (CourseName) {
+    if (CollegeName) {
       fetchInstructorCount();
     }
-  }, [CourseName]);
-
-  useEffect(() => {
-    const fetchSchedulesCountToday = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/auth/schedules-count/today`, {
-          params: { course: CourseName }
-        });
-        setSchedulesCountToday(response.data.count);
-      } catch (error) {
-        console.error("Failed to fetch today's schedule count:", error);
-      }
-    };
+  }, [CollegeName]);
   
-    if (CourseName) {
-      fetchSchedulesCountToday();
-    }
-  }, []);
   
   useEffect(() => {
     const generateChartData = () => {
@@ -234,6 +221,22 @@ const DeanDashboard: React.FC = () => {
 
             <Grid item xs={12} sm={6} md={3}>
               <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
+                <Avatar sx={{ bgcolor: '#f3e8ff', color: '#9f7aea', mr: 2 }}>
+                  <PeopleIcon />
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" fontWeight="600" color="text.primary">
+                    {programchairCount !== null ? programchairCount.toLocaleString() : "Loading..."}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Total Program Chairperson
+                  </Typography>
+                </Box>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
                 <Avatar sx={{ bgcolor: '#e0f2fe', color: '#38bdf8', mr: 2 }}>
                   <HighlightOffIcon />
                 </Avatar>
@@ -244,27 +247,6 @@ const DeanDashboard: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Instructor Absents Today
                   </Typography>
-                </Box>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={3}>
-              <Card elevation={1} sx={{ display: 'flex', alignItems: 'center', p: 2 }}>
-                <Avatar sx={{ bgcolor: '#ffedd5', color: '#fb923c', mr: 2 }}>
-                  <EventAvailableIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight="600" color="text.primary">
-                    {schedulesCountToday !== null ? schedulesCountToday.toLocaleString() : "Loading..."}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Classes Today
-                  </Typography>
-                </Box>
-                <Box sx={{ marginLeft: 'auto' }}>
-                  <IconButton size="small" sx={{ color: 'gray' }}>
-                    <MoreHorizIcon />
-                  </IconButton>
                 </Box>
               </Card>
             </Grid>
