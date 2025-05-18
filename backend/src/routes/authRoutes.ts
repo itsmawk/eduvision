@@ -34,6 +34,36 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
+router.get("/user/name", async (req: Request, res: Response): Promise<void> => {
+  const userId = req.query.name as string;
+
+  try {
+    if (!userId) {
+      res.status(400).json({ error: "User ID is required." });
+      return;
+    }
+
+    const user = await UserModel.findById(userId).select("last_name first_name middle_name");
+
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    res.status(200).json({
+      last_name: user.last_name,
+      first_name: user.first_name,
+      middle_name: user.middle_name,
+    });
+  } catch (error) {
+    console.error("Error fetching user name:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+
 router.get('/logs/today', async (req, res) => {
   try {
     const now = new Date();
@@ -379,7 +409,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
         college: user.college,
         course: user.course || null,
       },
-      requiresUpdate: user.status === "temporary",
+      requiresUpdate: user.status === "forverification",
     });
   } catch (error) {
     console.error(error);
@@ -401,7 +431,7 @@ router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
     const facultyList = await UserModel.find({
       role: "instructor",
       course: courseName,
-    }).select("first_name middle_name last_name username email role status");
+    })
 
     res.json(facultyList);
   } catch (error) {
@@ -446,9 +476,15 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       role,
       college: collegeCode,
       course,
+      highestEducationalAttainment,
+      academicRank,
+      statusOfAppointment,
+      numberOfPrep,
+      totalTeachingLoad
     } = req.body;
 
-    if (!last_name || !first_name || !username || !email || !password || !role || !collegeCode || !course) {
+    if (!last_name || !first_name || !username || !email || !password || !role || !collegeCode || 
+      !course) {
       res.status(400).json({ message: "Please provide all required fields, including college and course" });
       return;
     }
@@ -488,9 +524,14 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       email,
       password: hashedPassword,
       role,
-      status: "temporary",
+      status: "forverification",
       college: collegeDoc._id,
       course,
+      highestEducationalAttainment,
+      academicRank,
+      statusOfAppointment,
+      numberOfPrep,
+      totalTeachingLoad,
     });
 
     await newUser.save();
@@ -531,6 +572,11 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       status: newUser.status,
       college: newUser.college,
       course: newUser.course,
+      highestEducationalAttainment: newUser.highestEducationalAttainment,
+      academicRank: newUser.academicRank,
+      statusOfAppointment: newUser.statusOfAppointment,
+      numberOfPrep: newUser.numberOfPrep,
+      totalTeachingLoad: newUser.totalTeachingLoad,
     });
   } catch (error) {
     console.error(error);

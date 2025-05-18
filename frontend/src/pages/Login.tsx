@@ -48,7 +48,7 @@ export default function Login() {
         navigate(`/dean-dashboard/${user.id}`);
       } else if (
         user.role?.toLowerCase() === "instructor" &&
-        user.status?.toLowerCase() === "permanent"
+        user.status?.toLowerCase() === "active"
       ) {
         navigate(`/faculty-dashboard/${user.id}`);
       } else if (user.role?.toLowerCase() === "programchairperson") {

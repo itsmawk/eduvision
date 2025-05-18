@@ -231,7 +231,7 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{
       style: {
-        backgroundColor: 'rgba(0, 0, 0, 0.2)', // adjust opacity here (0.2 is lighter than default 0.5)
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
       },
     }}>
       <Box
@@ -285,20 +285,24 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
             {/* Faculty Information Table */}
             <Box component={Paper} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Username:</Typography>
-                <Typography variant="body1">{faculty.username}</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Highest Educational Attainment:</Typography>
+                <Typography variant="body1">{faculty.highestEducationalAttainment}</Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Email:</Typography>
-                <Typography variant="body1">{faculty.email}</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Academic Rank:</Typography>
+                <Typography variant="body1">{faculty.academicRank}</Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Role:</Typography>
-                <Typography variant="body1">{faculty.role.charAt(0).toUpperCase() + faculty.role.slice(1)}</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Status of Appointment:</Typography>
+                <Typography variant="body1">{faculty.statusOfAppointment}</Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Status:</Typography>
-                <Typography variant="body1">{faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)}</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>No. of Preparations:</Typography>
+                <Typography variant="body1">{faculty.numberOfPrep}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Total Teaching Load:</Typography>
+                <Typography variant="body1">{faculty.totalTeachingLoad}</Typography>
               </Box>
             </Box>
 

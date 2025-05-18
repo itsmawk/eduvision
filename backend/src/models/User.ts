@@ -16,11 +16,16 @@ export interface IUser extends Document {
   email: string;
   gender: string;
   birthdate: Date;
+  highestEducationalAttainment: string;
+  academicRank: string;
+  statusOfAppointment: string;
+  numberOfPrep: Number;
+  totalTeachingLoad: Number;
   password: string;
   role: UserRole;
   college?: mongoose.Types.ObjectId;
   course?: string;
-  status: 'temporary' | 'permanent';
+  status: 'forverification' | 'active' | 'inactive';
 }
 
 const UserSchema: Schema<IUser> = new Schema({
@@ -29,8 +34,13 @@ const UserSchema: Schema<IUser> = new Schema({
   last_name: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
-  gender: { type: String, default: "" }, // <-- you also forgot to define gender in Schema!
+  gender: { type: String, default: "" },
   birthdate: { type: Date, default: null },
+  highestEducationalAttainment: { type: String, default: "" },
+  academicRank: { type: String, default: "" },
+  statusOfAppointment: { type: String, default: "" },
+  numberOfPrep: { type: Number, default: 0 },
+  totalTeachingLoad: { type: Number, default: 0 },
   password: { type: String, required: true },
   role: {
     type: String,
@@ -41,8 +51,8 @@ const UserSchema: Schema<IUser> = new Schema({
   course: { type: String },
   status: {
     type: String,
-    enum: ['temporary', 'permanent'],
-    default: 'temporary'
+    enum: ['forverification', 'active','inactive'],
+    default: 'forverification'
   }
 });
 

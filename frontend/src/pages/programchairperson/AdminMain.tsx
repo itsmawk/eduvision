@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
@@ -8,6 +8,8 @@ import {
   Dashboard, People, Videocam, CalendarToday, Assessment, Logout
 } from "@mui/icons-material";
 import Swal from "sweetalert2";
+import axios from "axios";
+
 
 const drawerWidth = 260;
 
@@ -15,6 +17,8 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activePage, setActivePage] = useState(location.pathname);
+  const name = localStorage.getItem("userId") || "";
+  const [userName, setUserName] = useState<string>("");  
 
   const handleLogout = () => {
     Swal.fire({
@@ -51,6 +55,27 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     navigate(newPath);
   };
 
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/auth/user/name`, {
+          params: { name: name }
+        });
+        console.log("User name response:", response.data);
+  
+        const { last_name, first_name, middle_name } = response.data;
+        const fullName = `${last_name}, ${first_name} ${middle_name || ""}`;
+        setUserName(fullName.trim());
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+      }
+    };
+  
+    if (name) {
+      fetchUserName();
+    }
+  }, [name]);
+
   return (
     <Box sx={{ display: "flex", backgroundColor: "#f4f6f8", minHeight: "100vh" }}>
       <CssBaseline />
@@ -61,6 +86,12 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <Typography variant="h6" sx={{ flexGrow: 1, color: "#F8E5EE" }}>
             EduVision Admin Panel
           </Typography>
+
+          {/* Display dynamic name */}
+          <Typography variant="subtitle1" sx={{ color: "#F8E5EE", mr: 2 }}>
+            {userName}
+          </Typography>
+
           <IconButton
             onClick={handleLogout}
             sx={{
@@ -73,6 +104,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Logout />
           </IconButton>
         </Toolbar>
+
       </AppBar>
 
       {/* Sidebar */}

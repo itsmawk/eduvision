@@ -4,7 +4,7 @@ import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
-import { Dashboard, Videocam, CalendarToday, People } from "@mui/icons-material";
+import { Dashboard, Videocam, People } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
 const drawerWidth = 260;
@@ -18,8 +18,7 @@ const DeanMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dean-dashboard/:id" },
     { text: `${CollegeName} Staff Info`, icon: <People />, path: "/programchair-info/:id" },
-    { text: "Schedule", icon: <CalendarToday />, path: "/dean-schedule/:id" },
-    { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
+    { text: "Live Video", icon: <Videocam />, path: "/deanlivevideo/:id" },
   ];
 
   const handleNavigate = (path: string) => {
@@ -55,7 +54,7 @@ const DeanMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <List>
           {menuItems.map((item) => (
             <React.Fragment key={item.text}>
-              {item.text === "Faculty Info" && (
+              {item.text === "Staff Info" && (
                 <>
                   <Typography
                     variant="subtitle2"

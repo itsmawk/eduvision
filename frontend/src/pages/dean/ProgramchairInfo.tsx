@@ -22,18 +22,23 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Menu,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import EditIcon from '@mui/icons-material/Edit';
+import InfoIcon from '@mui/icons-material/Info';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from "@mui/icons-material/Add";
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import Swal from "sweetalert2";
 import { useFacultyContext } from "../../context/FacultyContext";
+import BlockIcon from '@mui/icons-material/Block';
 
 import axios from 'axios';
 import DeanMain from './DeanMain';
+import InfoModal from '../../components/InfoModal';
+
 
 interface ProgramChair {
   _id: string;
@@ -56,6 +61,37 @@ const ProgramchairInfo: React.FC = () => {
   const [programChairs, setProgramChairs] = useState<ProgramChair[]>([]);
   const [filteredChairs, setFilteredChairs] = useState<ProgramChair[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const { facultyList, setFacultyList } = useFacultyContext();
+  const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [newFaculty, setNewFaculty] = useState({
+    last_name: "",
+    first_name: "",
+    middle_name: "",
+    username: "",
+    email: "",
+    password: "",
+    role: "instructor",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [roleAnchorEl, setRoleAnchorEl] = useState<null | HTMLElement>(null);
+  const [courseAnchorEl, setCourseAnchorEl] = useState<null | HTMLElement>(null);
+  const [statusAnchorEl, setStatusAnchorEl] = useState<null | HTMLElement>(null);
+  const roleMenuOpen = Boolean(roleAnchorEl);
+  const courseMenuOpen = Boolean(courseAnchorEl);
+  const statusMenuOpen = Boolean(statusAnchorEl);
+  const [openInfoModal, setOpenInfoModal] = useState(false);
+  const [selectedFacultyInfo, setSelectedFacultyInfo] = useState<any>(null);
+  
+    const handleOpenInfoModal = (faculty: any) => {
+      setSelectedFacultyInfo(faculty);
+      setOpenInfoModal(true);
+    };
+  
+    const handleCloseInfoModal = () => {
+      setSelectedFacultyInfo(null);
+      setOpenInfoModal(false);
+    };
 
   useEffect(() => {
     const fetchProgramChairs = async () => {
@@ -64,7 +100,7 @@ const ProgramchairInfo: React.FC = () => {
           params: { collegeCode },
         });
         setProgramChairs(res.data);
-        setFilteredChairs(res.data); // Initialize filtered list
+        setFilteredChairs(res.data);
       } catch (error) {
         console.error("Error fetching program chairpersons:", error);
       }
@@ -89,21 +125,75 @@ const ProgramchairInfo: React.FC = () => {
     setFilteredChairs(filtered);
   };
 
+  
 
+  const handleRoleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setRoleAnchorEl(event.currentTarget);
+  };
+  
+  const handleCourseClick = (event: React.MouseEvent<HTMLElement>) => {
+    setCourseAnchorEl(event.currentTarget);
+  };
 
-  const { facultyList, setFacultyList } = useFacultyContext();
-  const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
-  const [openModal, setOpenModal] = useState(false);
-  const [newFaculty, setNewFaculty] = useState({
-    last_name: "",
-    first_name: "",
-    middle_name: "",
-    username: "",
-    email: "",
-    password: "",
-    role: "instructor",
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  const handleStatusClick = (event: React.MouseEvent<HTMLElement>) => {
+    setStatusAnchorEl(event.currentTarget);
+  };
+  
+  const handleRoleClose = () => {
+    setRoleAnchorEl(null);
+  };
+  
+  const handleCourseClose = () => {
+    setCourseAnchorEl(null);
+  };
+
+  const handleStatusClose = () => {
+    setStatusAnchorEl(null);
+  };
+  
+
+  const handleRoleSelect = (role: string) => {
+    if (role === 'all') {
+      setFilteredChairs(programChairs);
+    } else {
+      const filtered = programChairs.filter((chair) =>
+        chair.role.toLowerCase() === role.toLowerCase()
+      );
+      setFilteredChairs(filtered);
+    }
+    handleRoleClose();
+  };
+  
+  const uniqueCourses = Array.from(
+    new Set(programChairs.map(chair => chair.course))
+  );
+  
+  const handleCourseSelect = (course: string) => {
+    if (course === 'all') {
+      setFilteredChairs(programChairs);
+    } else {
+      const filtered = programChairs.filter(
+        (chair) => chair.course.toLowerCase() === course.toLowerCase()
+      );
+      setFilteredChairs(filtered);
+    }
+    handleCourseClose();
+  };
+  
+  const handleStatusSelect = (status: string) => {
+    if (status === 'all') {
+      setFilteredChairs(programChairs);
+    } else {
+      const filtered = programChairs.filter((chair) =>
+        chair.status.toLowerCase() === status.toLowerCase()
+      );
+      setFilteredChairs(filtered);
+    }
+    handleStatusClose(); // make sure this closes the menu
+  };
+  
+  
+
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
@@ -222,30 +312,120 @@ const ProgramchairInfo: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell><strong>Full Name</strong></TableCell>
-                  <TableCell><strong>Username</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
-                  <TableCell><strong>College</strong></TableCell>
-                  <TableCell><strong>Role</strong></TableCell>
-                  <TableCell><strong>Course</strong></TableCell>
-                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <strong>Position</strong>
+                      <IconButton onClick={handleRoleClick} size="small">
+                        <ArrowDropDownIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                    <Menu
+                      anchorEl={roleAnchorEl}
+                      open={roleMenuOpen}
+                      onClose={handleRoleClose}
+                    >
+                      <MenuItem onClick={() => handleRoleSelect('all')}>
+                        All
+                      </MenuItem>
+                      <MenuItem onClick={() => handleRoleSelect('programchairperson')}>
+                        Program Chairperson
+                      </MenuItem>
+                      <MenuItem onClick={() => handleRoleSelect('instructor')}>
+                        Instructor
+                      </MenuItem>
+                    </Menu>
+                  </TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <strong>Program</strong>
+                      <IconButton onClick={handleCourseClick} size="small">
+                        <ArrowDropDownIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                    <Menu
+                      anchorEl={courseAnchorEl}
+                      open={courseMenuOpen}
+                      onClose={handleCourseClose}
+                    >
+                      <MenuItem onClick={() => handleCourseSelect('all')}>
+                        All
+                      </MenuItem>
+                      {uniqueCourses.map((course) => (
+                        <MenuItem key={course} onClick={() => handleCourseSelect(course)}>
+                          {course}
+                        </MenuItem>
+                      ))}
+                    </Menu>
+                  </TableCell>
+
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      <strong>Status of Account</strong>
+                      <IconButton onClick={handleStatusClick} size="small">
+                        <ArrowDropDownIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                    <Menu
+                      anchorEl={statusAnchorEl}
+                      open={statusMenuOpen}
+                      onClose={handleStatusClose}
+                    >
+                      <MenuItem onClick={() => handleStatusSelect('all')}>
+                        All
+                      </MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('active')}>
+                        Active
+                      </MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('inactive')}>
+                        Inactive
+                      </MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('forverification')}>
+                        For Verification
+                      </MenuItem>
+                    </Menu>
+                  </TableCell>
+                  <TableCell><strong>View More</strong></TableCell>
                   <TableCell><strong>Action</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredChairs.map((chair) => (
                   <TableRow key={chair._id}>
-                    <TableCell>{`${chair.first_name} ${chair.middle_name ?? ''} ${chair.last_name}`}</TableCell>
-                    <TableCell>{chair.username}</TableCell>
+                    <TableCell>{`${chair.last_name}, ${chair.first_name} ${chair.middle_name ?? ''} `}</TableCell>
                     <TableCell>{chair.email}</TableCell>
-                    <TableCell>{chair.college?.code ?? "N/A"}</TableCell>
-                    <TableCell>{chair.role}</TableCell>
-                    <TableCell>{chair.course.toLocaleUpperCase()}</TableCell>
-                    <TableCell>{chair.status}</TableCell>
                     <TableCell>
-                      <IconButton><EditIcon /></IconButton>
-                      <IconButton onClick={() => handleDeleteAccount(chair._id)}>
-                        <DeleteIcon />
+                      {chair.role === "programchairperson"
+                        ? "Program Chairperson"
+                        : chair.role.charAt(0).toUpperCase() + chair.role.slice(1)}
+                    </TableCell>
+                    <TableCell>{chair.course.toLocaleUpperCase()}</TableCell>
+                    <TableCell>
+                      {chair.status === "forverification"
+                        ? "For Verification"
+                        : chair.status.charAt(0).toUpperCase() + chair.status.slice(1)}
+                    </TableCell>
+                    <TableCell>
+                    <>
+                        <IconButton color="primary" onClick={() => handleOpenInfoModal(chair)}>
+                          <InfoIcon />
+                        </IconButton>
+
+                        <InfoModal 
+                          open={openInfoModal} 
+                          onClose={handleCloseInfoModal}
+                          faculty={selectedFacultyInfo}
+                        />
+                      </>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton>
+                        <BlockIcon/>
                       </IconButton>
+                      <IconButton onClick={() => handleDeleteAccount(chair._id)}>
+                        <DeleteIcon sx={{ color: 'red' }} />
+                      </IconButton>
+                      
                     </TableCell>
                   </TableRow>
                 ))}

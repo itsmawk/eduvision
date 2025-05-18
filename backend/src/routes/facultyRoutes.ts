@@ -32,7 +32,7 @@ router.put("/update-credentials/:id", async (req: Request, res: Response): Promi
 
     faculty.username = username;
     faculty.password = hashedPassword;
-    faculty.status = "permanent";
+    faculty.status = "active";
 
     await faculty.save();
 

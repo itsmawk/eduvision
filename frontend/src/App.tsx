@@ -22,6 +22,9 @@ import DeanInfo from "./pages/superadmin/DeanInfo";
 import DeanMain from "./pages/dean/DeanMain";
 import DeanDashboard from "./pages/dean/DeanDashboard";
 import ProgramchairInfo from "./pages/dean/ProgramchairInfo";
+import DeanLiveVideo from "./pages/dean/DeanLiveVideo";
+
+
 
 export default function App() {
   return (
@@ -70,6 +73,15 @@ export default function App() {
                 <ProgramchairInfo />
               </DeanMain>
             </FacultyProvider>
+          }
+        />
+
+        <Route
+          path="/deanlivevideo/:id"
+          element={
+              <DeanMain>
+                <DeanLiveVideo />
+              </DeanMain>
           }
         />
 

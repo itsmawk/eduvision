@@ -9,7 +9,15 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Card, IconButton, Grid, Avatar
+  Card, 
+  IconButton, 
+  Grid, 
+  Avatar,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  SelectChangeEvent,
+  Select
 } from '@mui/material';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import PeopleIcon from '@mui/icons-material/People';
@@ -56,7 +64,17 @@ const DeanDashboard: React.FC = () => {
   const [programchairCount, setProgramChairCount] = useState<number | null>(null);
   const [allFacultiesLogs, setAllFacultiesLogs] = useState<any[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [chartData, setChartData] = useState<any[][]>([]);
+  const [chartData, setChartData] = useState<any[][]>([
+    [
+      { type: 'string', id: 'Instructor' },
+      { type: 'string', id: 'Subject' },
+      { type: 'date', id: 'Start' },
+      { type: 'date', id: 'End' },
+    ],
+  ]);
+  
+  const [courses, setCourses] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -66,13 +84,28 @@ const DeanDashboard: React.FC = () => {
   const ShortCourseName = CourseName.replace(/^bs/i, "").toUpperCase();
   const CollegeName = localStorage.getItem("college") ?? "";
 
+  const [courseValue, setCourseValue] = useState('all');
+  const [roomValue, setRoomValue] = useState('all');
+
+  const shortCourseValue = courseValue.replace(/^bs/i, "").toUpperCase();
+
+
+  const handleCourseChange = (event: SelectChangeEvent) => {
+    setCourseValue(event.target.value);
+  };
+
+  const handleRoomChange = (event: SelectChangeEvent) => {
+    setRoomValue(event.target.value);
+  };
+
+
   useEffect(() => {
     const fetchSchedules = async () => {
       try {
-        const response = await axios.post("http://localhost:5000/api/auth/all-schedules/today", {
-          shortCourseName: ShortCourseName
+        const response = await axios.post("http://localhost:5000/api/auth/dean/all-schedules/today", {
+          shortCourseValue: shortCourseValue
         });
-        console.log("Received today data:", response.data);
+        console.log("Received all schedules data:", response.data);
         setSchedules(response.data);
       } catch (error) {
         console.error("Error fetching schedules:", error);
@@ -80,7 +113,43 @@ const DeanDashboard: React.FC = () => {
     };
   
     fetchSchedules();
-  }, [ShortCourseName]);
+  }, [shortCourseValue]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/auth/all-courses/college", {
+          params: { CollegeName },
+        });
+        console.log("Courses fetched:", response.data);
+        setCourses(response.data);
+      } catch (error) {
+        console.error("Error fetching sections:", error);
+      }
+    };
+
+    if (CollegeName) {
+      fetchCourses();
+    }
+  }, [CollegeName]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/auth/all-rooms/college", {
+          params: { CollegeName },
+        });
+        console.log("Rooms fetched:", response.data);
+        setRooms(response.data);
+      } catch (error) {
+        console.error("Error fetching sections:", error);
+      }
+    };
+
+    if (CollegeName) {
+      fetchCourses();
+    }
+  }, [CollegeName]);
   
   useEffect(() => {
     const fetchInstructorCount = async () => {
@@ -117,7 +186,7 @@ const DeanDashboard: React.FC = () => {
           { type: 'string', id: 'Subject' },
           { type: 'date', id: 'Start' },
           { type: 'date', id: 'End' },
-        ]
+        ],
       ];
   
       schedules.forEach((schedule) => {
@@ -135,10 +204,9 @@ const DeanDashboard: React.FC = () => {
       setChartData(formattedData);
     };
   
-    if (schedules.length > 0) {
-      generateChartData();
-    }
+    generateChartData();  // Call it unconditionally whenever schedules changes
   }, [schedules]);
+  
 
 
   const options = {
@@ -285,20 +353,80 @@ const DeanDashboard: React.FC = () => {
               overflow: 'auto',
             }}
           >
-            <Typography variant="subtitle2" color="primary" fontWeight={600} mb={2}>
-              Today Schedule Chart
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="subtitle2" color="primary" fontWeight={600}>
+                Today Schedule Chart
+              </Typography>
+
+              <Box display="flex" gap={2}>
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel id="schedule-filter-label">Course</InputLabel>
+                  <Select
+                    labelId="course-filter-label"
+                    id="course-filter"
+                    value={courseValue}
+                    label="Course"
+                    onChange={handleCourseChange}
+                  >
+                    {courses.map((course: any) => (
+                      <MenuItem
+                        key={course._id}
+                        value={`${course.code}`}
+                      >
+                        {`${course.code.toUpperCase()}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel id="schedule-filter-label">Room</InputLabel>
+                  <Select
+                    labelId="room-filter-label"
+                    id="room-filter"
+                    value={roomValue}
+                    label="Room"
+                    onChange={handleRoomChange}
+                  >
+                    {rooms.map((room: any) => (
+                      <MenuItem
+                        key={room._id}
+                        value={`${room.name}`}
+                      >
+                        {`${room.name}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Box>
+
             <div style={{ width: '100%', height: 'auto' }}>
-              <Chart
-                chartType="Timeline"
-                data={chartData}
-                options={options}
-                width="100%"
-                height="auto"
-              />
+              {chartData.length > 1 ? (
+                <Chart
+                  chartType="Timeline"
+                  data={chartData}
+                  options={options}
+                  width="100%"
+                  height="auto"
+                />
+              ) : (
+                <Box
+                  height={200}
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{ color: 'text.secondary', fontStyle: 'italic' }}
+                >
+                  No data available
+                </Box>
+              )}
             </div>
-          </Paper>
-        </Box>
+
+                      </Paper>
+                    </Box>
+
+
         
         <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3} mb={6}>
           <Paper
