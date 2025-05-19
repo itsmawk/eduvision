@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
-  CssBaseline, Box, Toolbar, Typography, Divider, AppBar, IconButton
+  CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
 import {
-  Dashboard, People, Videocam, CalendarToday, Assessment, Logout
+  Dashboard, People, Videocam, CalendarToday, Assessment
 } from "@mui/icons-material";
-import Swal from "sweetalert2";
-import axios from "axios";
+import AdminHeader from "../../components/AdminHeader";
 
 
 const drawerWidth = 260;
@@ -17,24 +16,6 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activePage, setActivePage] = useState(location.pathname);
-  const name = localStorage.getItem("userId") || "";
-  const [userName, setUserName] = useState<string>("");  
-
-  const handleLogout = () => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You will be logged out.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#9F2042",
-      cancelButtonColor: "#7B0D1E",
-      confirmButtonText: "Yes, log out",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        navigate("/");
-      }
-    });
-  };
 
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
@@ -55,57 +36,12 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     navigate(newPath);
   };
 
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/auth/user/name`, {
-          params: { name: name }
-        });
-        console.log("User name response:", response.data);
-  
-        const { last_name, first_name, middle_name } = response.data;
-        const fullName = `${last_name}, ${first_name} ${middle_name || ""}`;
-        setUserName(fullName.trim());
-      } catch (error) {
-        console.error("Failed to fetch user name:", error);
-      }
-    };
-  
-    if (name) {
-      fetchUserName();
-    }
-  }, [name]);
 
   return (
     <Box sx={{ display: "flex", backgroundColor: "#f4f6f8", minHeight: "100vh" }}>
       <CssBaseline />
 
-      {/* Admin Header Inside AdminMain */}
-      <AppBar position="fixed" sx={{ zIndex: 1201, backgroundColor: "#7B0D1E" }}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, color: "#F8E5EE" }}>
-            EduVision Admin Panel
-          </Typography>
-
-          {/* Display dynamic name */}
-          <Typography variant="subtitle1" sx={{ color: "#F8E5EE", mr: 2 }}>
-            {userName}
-          </Typography>
-
-          <IconButton
-            onClick={handleLogout}
-            sx={{
-              color: "#F8E5EE",
-              "&:hover": {
-                color: "#FFD7E8",
-              },
-            }}
-          >
-            <Logout />
-          </IconButton>
-        </Toolbar>
-
-      </AppBar>
+      <AdminHeader />
 
       {/* Sidebar */}
       <Drawer

@@ -18,6 +18,9 @@ import { FacultyProvider } from "./context/FacultyContext";
 import SuperadminMain from "./pages/superadmin/SuperadminMain";
 import SuperadminDashboard from "./pages/superadmin/SuperadminDashboard";
 import DeanInfo from "./pages/superadmin/DeanInfo";
+import ProgramChairInfoOnly from "./pages/superadmin/ProgramChairInfoOnly";
+import InstructorInfoOnly from "./pages/superadmin/InstructorInfoOnly";
+
 {/* for dean*/}
 import DeanMain from "./pages/dean/DeanMain";
 import DeanDashboard from "./pages/dean/DeanDashboard";
@@ -51,6 +54,24 @@ export default function App() {
           element={
             <SuperadminMain>
               <DeanInfo />
+            </SuperadminMain>
+          }
+        />
+
+        <Route
+          path="/programchairinfo-only/:id"
+          element={
+            <SuperadminMain>
+              <ProgramChairInfoOnly />
+            </SuperadminMain>
+          }
+        />
+
+        <Route
+          path="/instructorinfo-only/:id"
+          element={
+            <SuperadminMain>
+              <InstructorInfoOnly />
             </SuperadminMain>
           }
         />

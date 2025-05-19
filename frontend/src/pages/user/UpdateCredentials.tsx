@@ -25,7 +25,7 @@ export default function UpdateCredentials() {
       await axios.put(`http://localhost:5000/api/auth/update-credentials/${id}`, {
         username: credentials.username,
         password: credentials.newPassword,
-        status: "permanent",
+        status: "active",
       });
 
       Swal.fire({ icon: "success", title: "Updated!", text: "Your credentials have been updated successfully." });

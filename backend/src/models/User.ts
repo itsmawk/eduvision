@@ -47,31 +47,25 @@ const UserSchema: Schema<IUser> = new Schema({
     required: true,
     enum: ['superadmin', 'instructor', 'dean', 'programchairperson']
   },
-  college: { type: mongoose.Schema.Types.ObjectId, ref: "College", required: true },
-  course: { type: String },
+  college: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "College",
+    required: function (this: IUser) {
+      return this.role !== "superadmin";
+    },
+  },
+  course: {
+    type: String,
+    required: function (this: IUser) {
+      return this.role === 'instructor' || this.role === 'programchairperson';
+    }
+  },
+  
   status: {
     type: String,
     enum: ['forverification', 'active','inactive'],
     default: 'forverification'
   }
-});
-
-UserSchema.pre('validate', function (next) {
-  const doc = this as IUser;
-
-  if (doc.role === 'superadmin') {
-    doc.college = undefined;
-    doc.course = undefined;
-  } else if (doc.role === 'dean') {
-    if (!doc.college) return next(new Error('College is required for dean'));
-    doc.course = undefined;
-  } else if (doc.role === 'instructor' || doc.role === 'programchairperson') {
-    if (!doc.college || !doc.course) {
-      return next(new Error('College and Course are required for instructors and program chairpersons'));
-    }
-  }
-
-  next();
 });
 
 const UserModel: Model<IUser> = mongoose.model<IUser>('User', UserSchema);

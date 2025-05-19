@@ -137,9 +137,13 @@ const Dashboard: React.FC = () => {
       schedules.forEach((schedule) => {
         const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
         const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
-  
+      
+        const instructorName = schedule.instructor
+          ? `${schedule.instructor.first_name} ${schedule.instructor.last_name}`
+          : "Unknown";
+      
         formattedData.push([
-          `${schedule.instructor.first_name} ${schedule.instructor.last_name}`,
+          instructorName,
           `${schedule.courseCode}`,
           new Date(year, month, date, startHour, startMinute),
           new Date(year, month, date, endHour, endMinute),

@@ -25,13 +25,20 @@ export default function Login() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
+      console.log("Submitting credentials:", credentials);
+
       const res = await axios.post("http://localhost:5000/api/auth/login", credentials);
 
       const { token, user, requiresUpdate } = res.data;
       localStorage.setItem("token", token);
       localStorage.setItem("userId", user.id);
-      localStorage.setItem("course", user.course);
-      localStorage.setItem("college", user.college.code);
+      if (user.course) {
+        localStorage.setItem("course", user.course);
+      }      
+      if (user.college?.code) {
+        localStorage.setItem("college", user.college.code);
+      }
+      
 
       Swal.fire({
         icon: "success",
@@ -56,7 +63,7 @@ export default function Login() {
       }
 
     } catch (error) {
-      let errorMessage = "Invalid Credentials";
+      let errorMessage = "Wala ka dito";
 
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || "Invalid Credentials";

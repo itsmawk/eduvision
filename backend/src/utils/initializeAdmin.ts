@@ -20,6 +20,7 @@ const initializeAdmin = async () => {
         password: hashedPassword,
         role: 'superadmin',
         status: process.env.DEFAULT_ADMIN_STATUS,
+        college: "",
       });
 
       await admin.save();

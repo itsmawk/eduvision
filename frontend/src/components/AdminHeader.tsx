@@ -1,14 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppBar, Toolbar, Typography, IconButton, Box } from "@mui/material";
 import { Logout } from "@mui/icons-material";
 import Swal from "sweetalert2";
+import axios from "axios";
+
 
 const AdminHeader: React.FC = () => {
   const navigate = useNavigate();
 
-  // Example: Fetch name from localStorage
-  const loggedInName = localStorage.getItem("fullname") || "Admin";
+  const name = localStorage.getItem("userId");
+  const [userName, setUserName] = useState<string>("");  
+  
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/auth/user/name`, {
+          params: { name: name }
+        });
+        console.log("User name response:", response.data);
+  
+        const { last_name, first_name, middle_name } = response.data;
+        const fullName = `${last_name}, ${first_name} ${middle_name || ""}`;
+        setUserName(fullName.trim());
+      } catch (error) {
+        console.error("Failed to fetch user name:", error);
+      }
+    };
+  
+    if (name) {
+      fetchUserName();
+    }
+  }, [name]);
 
   const handleLogout = () => {
     Swal.fire({
@@ -21,6 +45,7 @@ const AdminHeader: React.FC = () => {
       confirmButtonText: "Yes, log out",
     }).then((result) => {
       if (result.isConfirmed) {
+        localStorage.clear();
         navigate("/");
       }
     });
@@ -35,14 +60,14 @@ const AdminHeader: React.FC = () => {
 
         <Box display="flex" alignItems="center" gap={1}>
           <Typography variant="subtitle1" sx={{ color: "#F8E5EE" }}>
-            Ako
+            {userName}
           </Typography>
           <IconButton
             onClick={handleLogout}
             sx={{
               color: "#F8E5EE",
               "&:hover": {
-                color: "#FFD7E8", // softer hover tone
+                color: "#FFD7E8",
               },
             }}
           >
