@@ -12,6 +12,7 @@ export interface IUser extends Document {
   first_name: string;
   middle_name?: string;
   last_name: string;
+  ext_name?: string;
   username: string;
   email: string;
   gender: string;
@@ -19,8 +20,8 @@ export interface IUser extends Document {
   highestEducationalAttainment: string;
   academicRank: string;
   statusOfAppointment: string;
-  numberOfPrep: Number;
-  totalTeachingLoad: Number;
+  numberOfPrep: number;
+  totalTeachingLoad: number;
   password: string;
   role: UserRole;
   college?: mongoose.Types.ObjectId;
@@ -32,6 +33,7 @@ const UserSchema: Schema<IUser> = new Schema({
   first_name: { type: String, required: true },
   middle_name: { type: String, default: "" },
   last_name: { type: String, required: true },
+  ext_name: { type: String, default: "" },
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   gender: { type: String, default: "" },

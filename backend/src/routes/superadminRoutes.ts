@@ -10,7 +10,7 @@ const router = express.Router();
 router.get("/dean", async (req: Request, res: Response): Promise<void> => {
   try {
     const deanList = await UserModel.find({ role: "dean" })
-      .select("first_name middle_name last_name username email college status")
+      .select("first_name middle_name last_name ext_name username email college status")
       .populate("college", "code name");
 
     res.json(deanList);

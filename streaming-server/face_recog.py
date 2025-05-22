@@ -202,7 +202,7 @@ def generate_frames():
             roi_gray = gray[y:y + h, x:x + w]
             label, confidence = recognizer.predict(roi_gray)
 
-            if confidence > 60:
+            if confidence > 70:
                 continue  # Skip unknown
 
             user_id = id_dict.get(label)

@@ -24,6 +24,7 @@ import {
   InputLabel,
   SelectChangeEvent,
   Menu,
+  Autocomplete
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -55,6 +56,13 @@ interface ProgramChair {
   };
 }
 
+interface Course {
+  _id: string;
+  name: string;
+  code: string;
+  college: string;
+}
+
 const ProgramchairInfo: React.FC = () => {
   const collegeCode = localStorage.getItem("college") ?? "";
 
@@ -71,7 +79,9 @@ const ProgramchairInfo: React.FC = () => {
     username: "",
     email: "",
     password: "",
-    role: "instructor",
+    role: "",
+    college: "",
+    course: collegeCode,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [roleAnchorEl, setRoleAnchorEl] = useState<null | HTMLElement>(null);
@@ -82,6 +92,12 @@ const ProgramchairInfo: React.FC = () => {
   const statusMenuOpen = Boolean(statusAnchorEl);
   const [openInfoModal, setOpenInfoModal] = useState(false);
   const [selectedFacultyInfo, setSelectedFacultyInfo] = useState<any>(null);
+  const [selectedChair, setSelectedChair] = useState<string | null>(null);
+  const chairOptions = programChairs.map(chair => `${chair.first_name} ${chair.last_name}`);
+  const [courses, setCourses] = useState<Course[]>([]);
+  
+
+
   
     const handleOpenInfoModal = (faculty: any) => {
       setSelectedFacultyInfo(faculty);
@@ -93,7 +109,27 @@ const ProgramchairInfo: React.FC = () => {
       setOpenInfoModal(false);
     };
 
-  useEffect(() => {
+    useEffect(() => {
+      const fetchCourses = async () => {
+        const collegeCode = localStorage.getItem("college") ?? "";
+    
+        if (!collegeCode) {
+          console.error("No college code found in localStorage.");
+          return;
+        }
+    
+        try {
+          const response = await axios.post("http://localhost:5000/api/auth/college-courses", { collegeCode });
+          setCourses(response.data.courses); // <--- here
+        } catch (err: any) {
+          console.error("Failed to fetch courses:", err.response?.data?.message || err.message);
+        }
+      };
+    
+      fetchCourses();
+    }, []);
+    
+
     const fetchProgramChairs = async () => {
       try {
         const res = await axios.get(`http://localhost:5000/api/auth/programchairs`, {
@@ -101,12 +137,15 @@ const ProgramchairInfo: React.FC = () => {
         });
         setProgramChairs(res.data);
         setFilteredChairs(res.data);
+        setFacultyList(res.data); // Keep context in sync, if needed
       } catch (error) {
         console.error("Error fetching program chairpersons:", error);
       }
     };
-    fetchProgramChairs();
-  }, [collegeCode]);
+    
+    useEffect(() => {
+      fetchProgramChairs();
+    }, [collegeCode]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toLowerCase();
@@ -208,17 +247,19 @@ const ProgramchairInfo: React.FC = () => {
       last_name: "",
       first_name: "",
       middle_name: "",
-      username: random4Digit(),
+      username: "",
       email: "",
       password: random4Digit(),
       role: "instructor",
+      course: "",
+      college: collegeCode,
     });
     setOpenModal(true);
   };
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    setNewFaculty({ last_name: "", first_name: "", middle_name: "", username: "", email: "", password: "", role: "instructor" });
+    setNewFaculty({ last_name: "", first_name: "", middle_name: "", username: "", email: "", password: "", role: "instructor", course: "", college: "" });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,8 +268,14 @@ const ProgramchairInfo: React.FC = () => {
   };
 
   const handleRoleChange = (event: SelectChangeEvent<string>) => {
-    setNewFaculty((prev) => ({ ...prev, role: event.target.value }));
+    const selectedRole = event.target.value;
+    setNewFaculty((prev) => ({
+      ...prev,
+      role: selectedRole,
+      course: "" // reset course on role change
+    }));
   };
+  
 
   const handleAddAccount = async () => {
     if (
@@ -246,6 +293,7 @@ const ProgramchairInfo: React.FC = () => {
       setFacultyList([...facultyList, res.data]);
       Swal.fire({ icon: "success", title: "Success", text: "Faculty account added successfully!" });
       handleCloseModal();
+      fetchProgramChairs();
     } catch (error: any) {
       console.error("Error adding faculty account:", error);
       Swal.fire({ icon: "error", title: "Error", text: error.response?.data?.message || "Failed to add faculty account." });
@@ -275,6 +323,7 @@ const ProgramchairInfo: React.FC = () => {
           title: "Deleted!",
           text: "The faculty account has been deleted successfully.",
         });
+        fetchProgramChairs();
       } catch (error) {
         console.error("Error deleting account:", error);
         Swal.fire({
@@ -285,6 +334,23 @@ const ProgramchairInfo: React.FC = () => {
       }
     }
   };
+
+  const generateUsername = (firstName: string, lastName: string) => {
+        const first = firstName.substring(0, 3).toUpperCase();
+        const last = lastName.substring(0, 3).toUpperCase();
+        return last + first;
+      };
+      
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          if (newFaculty.first_name && newFaculty.last_name) {
+            const username = generateUsername(newFaculty.first_name, newFaculty.last_name);
+            setNewFaculty(prev => ({ ...prev, username }));
+          }
+        }, 2000);
+      
+        return () => clearTimeout(timer);
+      }, [newFaculty.first_name, newFaculty.last_name]);
 
   return (
     <DeanMain>
@@ -462,14 +528,17 @@ const ProgramchairInfo: React.FC = () => {
             onChange={handleInputChange} 
             margin="dense" 
           />
-          <TextField 
-            fullWidth 
-            label="Username" 
-            name="username" 
-            value={newFaculty.username} 
-            onChange={handleInputChange} 
-            margin="dense" 
+          <TextField
+            label="Username"
+            name="username"
+            value={newFaculty.username}
+            fullWidth
+            margin="normal"
+            InputProps={{
+              readOnly: true,
+            }}
           />
+
           <TextField 
             fullWidth 
             label="Email" 
@@ -499,13 +568,39 @@ const ProgramchairInfo: React.FC = () => {
           />
           <FormControl fullWidth margin="dense">
             <InputLabel>Role</InputLabel>
-            <Select name="role" value={newFaculty.role} onChange={handleRoleChange}>
-              <MenuItem value="superadmin">Super Admin</MenuItem>
+            <Select
+              value={newFaculty.role}
+              onChange={handleRoleChange}
+              label="Role"
+              name="role"
+            >
               <MenuItem value="instructor">Instructor</MenuItem>
-              <MenuItem value="dean">Dean</MenuItem>
-              <MenuItem value="programchairperson">Program Chairperson</MenuItem>
+              <MenuItem value="program chairperson">Program Chairperson</MenuItem>
+              {/* Add more roles if needed */}
             </Select>
           </FormControl>
+
+          
+          <Autocomplete
+            options={courses.map(course => course.code)}
+            getOptionLabel={(option) => option}
+            value={newFaculty.course || null}
+            onChange={(event, newValue) => {
+              setNewFaculty(prev => ({ ...prev, course: newValue || "" }));
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Select Course Code"
+                variant="outlined"
+                size="small"
+              />
+            )}
+            sx={{ width: 250 }}
+          />
+
+
+
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal}>Cancel</Button>

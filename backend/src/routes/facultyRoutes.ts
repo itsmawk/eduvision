@@ -36,12 +36,17 @@ router.put("/update-credentials/:id", async (req: Request, res: Response): Promi
 
     await faculty.save();
 
-    res.json({ message: "Credentials updated successfully" });
+    // Include role in the response
+    res.json({
+      message: "Credentials updated successfully",
+      role: faculty.role, // <-- Add this
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 // GET SCHEDULES FOR SPECIFIC FACULTY
 router.get("/faculty-schedules/:facultyId", async (req: Request, res: Response): Promise<void> => {

@@ -8,6 +8,7 @@ import Room from "../models/Room";
 import Section from "../models/Section";
 import CollegeModel from "../models/College";
 import Log from "../models/AttendanceLogs";
+import Semester from "../models/Semester";
 import dotenv from "dotenv";
 import multer from "multer";
 import mammoth from "mammoth";
@@ -34,6 +35,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+router.get('/all-semester', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const semesters = await Semester.find({}, { _id: 0 }).sort({ academicYear: -1 });
+    res.status(200).json(semesters);
+  } catch (error) {
+    console.error('Error fetching semesters:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 router.get("/user/name", async (req: Request, res: Response): Promise<void> => {
   const userId = req.query.name as string;
@@ -167,7 +177,9 @@ router.post("/show-daily-report", async (req: Request, res: Response) => {
   try {
     const { CourseName } = req.body;
 
-    const query: any = {};
+    const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+
+    const query: any = { date: today }; // only logs from today
     if (CourseName) query.course = CourseName;
 
     const logs = await Log.find(query)
@@ -470,6 +482,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       last_name,
       first_name,
       middle_name,
+      ext_name,
       email,
       username,
       password,
@@ -483,8 +496,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       totalTeachingLoad
     } = req.body;
 
-    if (!last_name || !first_name || !username || !email || !password || !role || !collegeCode || 
-      !course) {
+    if (!last_name || !first_name || !username || !email || !password || !role || !collegeCode) {
       res.status(400).json({ message: "Please provide all required fields, including college and course" });
       return;
     }
@@ -520,6 +532,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       last_name,
       first_name,
       middle_name: middle_name || "",
+      ext_name: ext_name || "",
       username,
       email,
       password: hashedPassword,
@@ -566,6 +579,7 @@ router.post("/faculty", async (req: Request, res: Response): Promise<void> => {
       last_name: newUser.last_name,
       first_name: newUser.first_name,
       middle_name: newUser.middle_name,
+      ext_name: newUser.ext_name,
       username: newUser.username,
       email: newUser.email,
       role: newUser.role,

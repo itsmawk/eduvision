@@ -11,11 +11,11 @@ import {
   TableRow,
   Paper,
   Typography,
-
+  CircularProgress,
+  IconButton
 } from '@mui/material';
-
+import EditIcon from '@mui/icons-material/Edit';
 import CalendarHeatmap from 'react-calendar-heatmap';
-import { IconButton } from '@mui/material';
 import Tooltip from '@mui/material/Tooltip';
 import 'react-calendar-heatmap/dist/styles.css';
 import './CustomHeatmap.css';
@@ -32,6 +32,8 @@ dayjs.extend(weekday);
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isBetween);
+import AddManualScheduleModal from './AddManualScheduleModal'; // Adjust path as needed
+
 
 
 interface ModalProps {
@@ -50,14 +52,29 @@ interface Schedule {
   room: string;
 }
 
+interface Semester {
+  semesterName: string;
+  academicYear: string;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+}
 
 const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
   const [schedules, setSchedules] = useState([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
   const [logs, setLogs] = useState([]);
-
+  const [isLoading, setIsLoading] = useState(true);
   const today = new Date();
   const startDate = new Date(today.getFullYear(), 0, 1);
   const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const [openAddManualModal, setOpenAddManualModal] = useState(false);
+
+  const handleOpenAddManual = () => setOpenAddManualModal(true);
+  const handleCloseAddManual = () => setOpenAddManualModal(false);
+
+
+  
 
 
   const handleAddSchedule = async () => {
@@ -168,11 +185,24 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
     }
   };
   
+  useEffect(() => {
+    const fetchSemesters = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/auth/all-semester');
+        console.log('Received schedule semester:', response.data);
+        setSemesters(response.data);
+      } catch (error) {
+        console.error('Error fetching semester:', error);
+      }
+    };
 
+    fetchSemesters();
+  }, []);
 
   useEffect(() => {
     const fetchSchedules = async () => {
       if (!faculty?._id) return;
+      setIsLoading(true);
 
       try {
         const response = await axios.get('http://localhost:5000/api/auth/schedules-faculty', {
@@ -182,6 +212,8 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
         setSchedules(response.data);
       } catch (error) {
         console.error('Error fetching schedules:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -228,6 +260,19 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
 
   const values = processLogsForHeatmap();
 
+  const formatTime = (time24: string) => {
+    if (!time24) return '';
+  
+    const [hourStr, minuteStr] = time24.split(':');
+    let hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr, 10);
+  
+    hour = hour % 12 || 12;
+  
+    return `${hour}:${minute.toString().padStart(2, '0')}`;
+  };
+  
+
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{
       style: {
@@ -248,28 +293,18 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
           display: 'flex',
           flexDirection: 'column',
           gap: 3,
+          color: '#211103',
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
           <Typography variant="h5">
             Faculty Information of{' '}
-            <span style={{ fontWeight: 'bold' }}>{`${faculty.last_name}, ${faculty.first_name}`}</span>
+            <span style={{ fontWeight: 'bold', color: '#7B0D1E' }}>
+              {`${faculty.last_name}, ${faculty.first_name}`}
+            </span>
           </Typography>
-
-          {/* Icons aligned to the right */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Upload schedule manually" arrow>
-              <IconButton color="primary" onClick={handleAddSchedule}>
-                <AddCircleOutlineIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Upload schedule by docx" arrow>
-              <IconButton color="primary" onClick={handleAddSchedule}>
-                <FileUploadIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
         </Box>
+
         
         <Box
           sx={{
@@ -282,8 +317,21 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
         >
           {/* Left Column: Faculty Info and Heatmap */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+            2nd Semester, AY 2024-2025
+          </Typography>
             {/* Faculty Information Table */}
-            <Box component={Paper} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Box component={Paper} sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1, position: 'relative', 
+              backgroundColor: '#FFF', border: '1px solid #3D1308', borderRadius: 2 }}>
+              <IconButton
+                aria-label="edit faculty info"
+                sx={{ position: 'absolute', top: 8, right: 8, color: '#7B0D1E' }}
+                onClick={() => {
+                  console.log('Edit clicked');
+                }}
+              >
+                <EditIcon />
+              </IconButton>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Typography variant="body1" sx={{ fontWeight: 'bold' }}>Highest Educational Attainment:</Typography>
                 <Typography variant="body1">{faculty.highestEducationalAttainment}</Typography>
@@ -310,9 +358,9 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
             <Box
               sx={{
                 p: 2,
-                border: '1px solid #ccc',
+                border: '1px solid #3D1308',
                 borderRadius: 2,
-                backgroundColor: '#fafafa',
+                backgroundColor: '#FFF',
                 flexShrink: 0,
                 height: 'auto',
                 textAlign: 'center',
@@ -344,55 +392,88 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
 
           {/* Right Column: Faculty Schedules */}
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Teaching Load
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Upload schedule manually" arrow>
+                <IconButton sx={{ color: '#9F2042' }} onClick={handleOpenAddManual}>
+                  <AddCircleOutlineIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Upload schedule by docx" arrow>
+                <IconButton sx={{ color: '#9F2042' }} onClick={handleAddSchedule}>
+                  <FileUploadIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
             {/* Faculty Schedules Table */}
             <TableContainer component={Paper} sx={{ maxHeight: 440, overflowY: 'auto' }}>
               <Table size="small" aria-label="faculty schedules table">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Course Code</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Course Title</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Days</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Section</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Room</TableCell>
+                    {['Course Code', 'Days', 'Time', 'Section', 'Room'].map((label) => (
+                      <TableCell
+                        key={label}
+                        sx={{
+                          fontWeight: 'bold',
+                          position: 'sticky',
+                          top: 0,
+                          backgroundColor: 'background.paper',
+                          zIndex: 10,
+                        }}
+                      >
+                        {label}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {schedules.length > 0 ? (
-                    schedules.map((schedule: any) => (
-                      <TableRow key={schedule._id}>
-                        <TableCell>{schedule.courseCode}</TableCell>
-                        <TableCell>{schedule.courseTitle}</TableCell>
-                        <TableCell>
-                          {(() => {
-                            const dayAbbreviations: { [key: string]: string } = {
-                              sun: 'Su',
-                              mon: 'M',
-                              tue: 'T',
-                              wed: 'W',
-                              thu: 'Th',
-                              fri: 'F',
-                              sat: 'S',
-                            };
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center">
+                        <CircularProgress size={24} />
+                      </TableCell>
+                    </TableRow>
+                  ) : schedules.length > 0 ? (
+                    (schedules as Array<{ startTime: string; endTime: string; [key: string]: any }>).slice()
+                      .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                      .map((schedule) => (
+                        <TableRow key={schedule._id}>
+                          <TableCell>{schedule.courseCode}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const dayAbbreviations: { [key: string]: string } = {
+                                sun: 'Su',
+                                mon: 'M',
+                                tue: 'T',
+                                wed: 'W',
+                                thu: 'Th',
+                                fri: 'F',
+                                sat: 'S',
+                              };
 
-                            return Object.entries(schedule.days)
-                              .filter(([_, isActive]) => isActive)
-                              .map(([day]) => dayAbbreviations[day.toLowerCase()] || '')
-                              .join('');
-                          })()}
-                        </TableCell>
-                        <TableCell>
-                          {schedule.startTime} - {schedule.endTime}
-                        </TableCell>
-                        <TableCell>
-                          {schedule.section?.course} - {schedule.section?.section}{schedule.section?.block}
-                        </TableCell>
-                        <TableCell>{schedule.room}</TableCell>
-                      </TableRow>
-                    ))
+                              return Object.entries(schedule.days)
+                                .filter(([_, isActive]) => isActive)
+                                .map(([day]) => dayAbbreviations[day.toLowerCase()] || '')
+                                .join('');
+                            })()}
+                          </TableCell>
+                          <TableCell>
+                            {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                          </TableCell>
+                          <TableCell>
+                            {schedule.section?.course} - {schedule.section?.section}
+                            {schedule.section?.block}
+                          </TableCell>
+                          <TableCell>{schedule.room}</TableCell>
+                        </TableRow>
+                      ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={6} align="center">
                         No schedules yet
                       </TableCell>
                     </TableRow>
@@ -403,9 +484,11 @@ const InfoModal: React.FC<ModalProps> = ({ open, onClose, faculty }) => {
           </Box>
         </Box>
 
-        <Button variant="contained" onClick={onClose} sx={{ marginTop: 2 }} fullWidth>
+        <Button variant="contained" onClick={onClose} sx={{ mt: 2, backgroundColor: '#7B0D1E', '&:hover': { backgroundColor: '#9F2042' } }} fullWidth>
           Close
         </Button>
+        <AddManualScheduleModal open={openAddManualModal} onClose={handleCloseAddManual} faculty={faculty} />
+
       </Box>
 
 

@@ -1,270 +1,373 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Modal,
-  Box,
-  Typography,
-  Grid,
-  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Button,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
+  TextField,
+  Grid,
+  Checkbox,
+  FormControlLabel,
+  Autocomplete 
 } from "@mui/material";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs from "dayjs";
+import axios from "axios";
+import Swal from "sweetalert2";
 
-type Subject = {
+interface AddManualScheduleProps {
+  open: boolean;
+  onClose: () => void;
+  faculty: any;
+}
+
+export interface Subject {
   _id: string;
   courseCode: string;
   courseTitle: string;
-};
+}
 
-type Instructor = {
+interface Room {
   _id: string;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-};
+  name: string;
+}
 
-type Section = {
+interface Section {
   _id: string;
   course: string;
   section: string;
   block: string;
-};
+}
 
-type Lab = {
+interface Semester {
+  semesterName: "1ST" | "2ND" | "MIDYEAR";
+  academicYear: string;
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
+}
+
+interface Faculty {
   _id: string;
-  name: string;
-};
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  // Add other fields if needed
+}
 
-type SemesterOption = {
-  label: string;
-  value: string;
-};
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  courseCode: string;
-  courseTitle: string;
-  subjects: Subject[];
-  instructors: Instructor[];
-  sections: Section[];
-  labs: Lab[];
-  selectedInstructor: string;
-  selectedSection: string;
-  selectedLab: string;
-  selectedDays: Record<string, boolean>;
-  selectedSemester: string;
-  semesterOptions: SemesterOption[];
-  startTime: dayjs.Dayjs | null;
-  endTime: dayjs.Dayjs | null;
-  daysOfWeek: string[];
-  onChangeSubjectCode: (code: string) => void;
-  onChangeInstructor: (id: string) => void;
-  onChangeSection: (id: string) => void;
-  onChangeLab: (name: string) => void;
-  onChangeDay: (day: string) => void;
-  onChangeSemester: (value: string) => void;
-  onChangeStartTime: (value: dayjs.Dayjs | null) => void;
-  onChangeEndTime: (value: dayjs.Dayjs | null) => void;
-  onSubmit: () => void;
-};
-
-const AddScheduleManualModal: React.FC<Props> = ({
+const AddManualSchedule: React.FC<AddManualScheduleProps> = ({
   open,
   onClose,
-  courseCode,
-  courseTitle,
-  subjects,
-  instructors,
-  sections,
-  labs,
-  selectedInstructor,
-  selectedSection,
-  selectedLab,
-  selectedDays,
-  selectedSemester,
-  semesterOptions,
-  startTime,
-  endTime,
-  daysOfWeek,
-  onChangeSubjectCode,
-  onChangeInstructor,
-  onChangeSection,
-  onChangeLab,
-  onChangeDay,
-  onChangeSemester,
-  onChangeStartTime,
-  onChangeEndTime,
-  onSubmit,
+  faculty,
 }) => {
+  const [formData, setFormData] = useState({
+    courseTitle: "",
+    courseCode: "",
+    instructor: faculty?._id || "",
+    room: "",
+    startTime: "",
+    endTime: "",
+    days: {
+      mon: false,
+      tue: false,
+      wed: false,
+      thu: false,
+      fri: false,
+      sat: false,
+    },
+    semesterStartDate: "",
+    semesterEndDate: "",
+    section: "",
+  });
+  const handleClose = () => {
+    // Reset days to all false
+    setFormData((prev) => ({
+      ...prev,
+      days: {
+        mon: false,
+        tue: false,
+        wed: false,
+        thu: false,
+        fri: false,
+        sat: false,
+      },
+    }));
+
+    // Call the original onClose prop
+    onClose();
+  };
+
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [facultyList, setFacultyList] = useState<Faculty[]>([]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      days: { ...prev.days, [name]: checked },
+    }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const res = await axios.post("http://localhost:5000/api/auth/schedules", formData);
+      console.log("Schedule created:", res.data);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Schedule created successfully!',
+        timer: 2000,
+        showConfirmButton: false,
+      });
+  
+      onClose();
+    } catch (error) {
+      console.error("Failed to create schedule", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to create schedule. Please try again.',
+      });
+    }
+  };
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const res = await axios.get<Subject[]>("http://localhost:5000/api/auth/subjects");
+        setSubjects(res.data);
+      } catch (err) {
+        console.error("Failed to fetch subjects", err);
+      }
+    };
+
+    fetchSubjects();
+  }, []);
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await axios.get<Room[]>("http://localhost:5000/api/auth/rooms");
+        setRooms(res.data);
+      } catch (error) {
+        console.error("Failed to fetch rooms", error);
+      }
+    };
+  
+    fetchRooms();
+  }, []);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const res = await axios.get<Section[]>("http://localhost:5000/api/auth/sections");
+        setSections(res.data);
+      } catch (error) {
+        console.error("Failed to fetch sections", error);
+      }
+    };
+  
+    fetchSections();
+  }, []);
+  
+  useEffect(() => {
+    const fetchSemesters = async () => {
+      try {
+        const res = await axios.get<Semester[]>("http://localhost:5000/api/auth/all-semester");
+        setSemesters(res.data);
+      } catch (error) {
+        console.error("Error fetching semesters:", error);
+      }
+    };
+
+    fetchSemesters();
+  }, []);
+
+  useEffect(() => {
+    const courseName = localStorage.getItem("course");
+
+    if (!courseName) {
+      console.error("Course name is not found in local storage.");
+      return;
+    }
+
+    const fetchFaculty = async () => {
+      try {
+        const response = await axios.get<Faculty[]>(
+          `http://localhost:5000/api/auth/faculty?courseName=${encodeURIComponent(courseName)}`
+        );
+        setFacultyList(response.data);
+      } catch (err) {
+        console.error("Error fetching faculty:", err);
+      }
+    };
+
+    fetchFaculty();
+  }, []);
+
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 800,
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Add Schedule
-        </Typography>
-
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Add Manual Schedule</DialogTitle>
+      <DialogContent dividers>
         <Grid container spacing={2}>
-          {/* LEFT COLUMN */}
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Subject Code</InputLabel>
-              <Select
-                value={courseCode}
-                onChange={(e) => onChangeSubjectCode(e.target.value)}
-              >
-                {subjects.map((subject) => (
-                  <MenuItem key={subject._id} value={subject.courseCode}>
-                    {subject.courseCode}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              fullWidth
-              label="Subject Name"
-              value={courseTitle}
-              InputProps={{
-                readOnly: true,
+          <Grid item xs={12}>
+            <Autocomplete
+              options={subjects}
+              getOptionLabel={(option) => `${option.courseCode} - ${option.courseTitle}`}
+              onChange={(_, value) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  courseCode: value?.courseCode || "",
+                  courseTitle: value?.courseTitle || "",
+                }));
               }}
-              sx={{ mt: 2 }}
+              renderInput={(params) => (
+                <TextField {...params} label="Course Code" variant="outlined" fullWidth />
+              )}
+              isOptionEqualToValue={(option, value) => option._id === value._id}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <Autocomplete
+              options={rooms}
+              getOptionLabel={(option) => option.name}
+              onChange={(_, value) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  room: value?.name || "",
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Room" variant="outlined" fullWidth />
+              )}
+              isOptionEqualToValue={(option, value) => option._id === value._id}
+            />
+          </Grid>
+
+          <Grid item xs={6}>
+            <Autocomplete
+              options={sections}
+              getOptionLabel={(option) => `${option.course} - ${option.section}${option.block}`}
+              onChange={(_, value) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  section: value?._id || "",
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Section" variant="outlined" fullWidth />
+              )}
+              isOptionEqualToValue={(option, value) => option._id === value._id}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <Autocomplete
+              options={faculty ? [faculty] : []}  // only current user
+              getOptionLabel={(option) => {
+                const middleInitial = option.middle_name ? option.middle_name.charAt(0).toUpperCase() + "." : "";
+                return `${option.last_name}, ${option.first_name} ${middleInitial}`;
+              }}
+              value={faculty || null}  // set to current user or null
+              onChange={(_, value) => {
+                // no need to change because it's disabled, but you can keep this or remove
+                setFormData((prev) => ({
+                  ...prev,
+                  instructor: value?._id || "",
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Instructor"
+                  variant="outlined"
+                  fullWidth
+                  disabled  // disable typing and dropdown
+                />
+              )}
+              disableClearable  // disables clear (X) button
+              popupIcon={null}   // hide dropdown arrow icon
             />
 
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel>Instructor</InputLabel>
-              <Select
-                value={selectedInstructor}
-                onChange={(e) => onChangeInstructor(e.target.value)}
-              >
-                {instructors.map((instructor) => (
-                  <MenuItem key={instructor._id} value={instructor._id}>
-                    {`${instructor.last_name}, ${instructor.first_name} ${
-                      instructor.middle_name ? instructor.middle_name[0] + "." : ""
-                    }`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel id="section-label">Section</InputLabel>
-              <Select
-                labelId="section-label"
-                value={selectedSection}
-                onChange={(e) => onChangeSection(e.target.value)}
-              >
-                {sections.map((section) => (
-                  <MenuItem key={section._id} value={section._id}>
-                    {`${section.course} ${section.section}${section.block}`}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          </Grid>
+          <Grid item xs={12}>
+            <Autocomplete
+              options={semesters}
+              getOptionLabel={(option) => `${option.semesterName} - AY ${option.academicYear}`}
+              onChange={(_, value) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  semesterStartDate: value?.startDate || "",
+                  semesterEndDate: value?.endDate || "",
+                }));
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Semester" variant="outlined" fullWidth />
+              )}
+              isOptionEqualToValue={(option, value) =>
+                option.semesterName === value.semesterName &&
+                option.academicYear === value.academicYear
+              }
+            />
           </Grid>
 
-          {/* RIGHT COLUMN */}
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Lab</InputLabel>
-              <Select
-                value={selectedLab}
-                onChange={(e) => onChangeLab(e.target.value)}
-              >
-                {labs.map((lab) => (
-                  <MenuItem key={lab._id} value={lab.name}>
-                    {lab.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1">Days</Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
-                {daysOfWeek.map((day) => (
-                  <FormControl key={day} sx={{ minWidth: 80 }}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={selectedDays[day]}
-                        onChange={() => onChangeDay(day)}
-                      />
-                      &nbsp;{day.charAt(0).toUpperCase() + day.slice(1)}
-                    </label>
-                  </FormControl>
-                ))}
-              </Box>
-            </Box>
-
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel>Semester</InputLabel>
-              <Select
-                value={selectedSemester}
-                onChange={(e) => onChangeSemester(e.target.value)}
-              >
-                {semesterOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={6}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <TimePicker
-                    label="Start Time"
-                    value={startTime}
-                    onChange={onChangeStartTime}
-                    sx={{ width: "100%" }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-              <Grid item xs={6}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <TimePicker
-                    label="End Time"
-                    value={endTime}
-                    onChange={onChangeEndTime}
-                    sx={{ width: "100%" }}
-                  />
-                </LocalizationProvider>
-              </Grid>
-            </Grid>
+          <Grid item xs={6}>
+            <TextField
+              label="Start Time"
+              name="startTime"
+              type="time"
+              fullWidth
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+            />
           </Grid>
-
-          <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-            <Button onClick={onClose} sx={{ mr: 1 }}>
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" onClick={onSubmit}>
-              Add
-            </Button>
+          <Grid item xs={6}>
+            <TextField
+              label="End Time"
+              name="endTime"
+              type="time"
+              fullWidth
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <label>Days:</label>
+            <div>
+              {["mon", "tue", "wed", "thu", "fri", "sat"].map((day) => (
+                <FormControlLabel
+                  key={day}
+                  control={
+                    <Checkbox
+                      checked={formData.days[day as keyof typeof formData.days]}
+                      onChange={handleDayChange}
+                      name={day}
+                    />
+                  }
+                  label={day.toUpperCase()}
+                />
+              ))}
+            </div>
           </Grid>
         </Grid>
-      </Box>
-    </Modal>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleSubmit} variant="contained" color="primary">
+          Submit
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
-export default AddScheduleManualModal;
+export default AddManualSchedule;

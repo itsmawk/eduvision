@@ -9,6 +9,36 @@ import Schedule from '../models/Schedule';
 
 const router = express.Router();
 
+
+router.post("/college-courses", async (req: Request, res: Response): Promise<void> => {
+  const { collegeCode } = req.body;
+
+  if (!collegeCode) {
+    res.status(400).json({ message: "collegeCode is required." });
+    return; // exit early
+  }
+
+  try {
+    const college = await College.findOne({ code: collegeCode });
+
+    if (!college) {
+      res.status(404).json({ message: "College not found." });
+      return; // exit early
+    }
+
+    const courses = await Course.find({ college: college._id });
+
+    res.status(200).json({
+      collegeId: college._id,
+      courses,
+    });
+  } catch (error) {
+    console.error("Error fetching college and courses:", error);
+    res.status(500).json({ message: "Server error." });
+  }
+});
+
+
 // ✅ GET sections filtered by CollegeName (code), with populated college info
 router.get('/all-courses/college', async (req: Request, res: Response): Promise<void> => {
   const { CollegeName } = req.query;

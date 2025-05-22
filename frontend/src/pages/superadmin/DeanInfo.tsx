@@ -49,6 +49,7 @@ interface Dean {
     first_name: string;
     middle_name?: string;
     last_name: string;
+    ext_name?: string;
     username: string;
     email: string;
     role: string;
@@ -76,8 +77,8 @@ const [newFaculty, setNewFaculty] = useState({
   last_name: '',
   first_name: '',
   middle_name: '',
+  ext_name: '',
   college: '',
-  course: '',
   username: '',
   email: '',
   password: random4Digit(),
@@ -123,7 +124,7 @@ const [showPassword, setShowPassword] = useState(false);
   
   const handleAddAccount = async () => {
     try {
-      const requiredFields = ['last_name', 'first_name', 'college', 'course', 'email'];
+      const requiredFields = ['last_name', 'first_name', 'college', 'email'];
       for (const field of requiredFields) {
         if (!newFaculty[field as keyof typeof newFaculty]) {
           Swal.fire({
@@ -145,8 +146,8 @@ const [showPassword, setShowPassword] = useState(false);
         last_name: '',
         first_name: '',
         middle_name: '',
+        ext_name: '',
         college: '',
-        course: '',
         username: '',
         email: '',
         password: '',
@@ -352,7 +353,7 @@ const [showPassword, setShowPassword] = useState(false);
                 <TableBody>
                 {filteredDeans.map((dean) => (
                   <TableRow key={dean._id}>
-                    <TableCell>{`${dean.last_name}, ${dean.first_name} ${dean.middle_name ? dean.middle_name.charAt(0) + '.' : ''}`}</TableCell>
+                    <TableCell>{`${dean.last_name}, ${dean.first_name} ${dean.middle_name ? dean.middle_name.charAt(0) + '.' : ''} ${dean.ext_name}`}</TableCell>
                     <TableCell>{dean.username}</TableCell>
                     <TableCell>{dean.email}</TableCell>
                     <TableCell>{dean.college?.name || 'N/A'}</TableCell>
@@ -377,204 +378,136 @@ const [showPassword, setShowPassword] = useState(false);
           )}
         </Grid>
       </Grid>
-      <Dialog open={openModal} onClose={() => handleCloseModal()} maxWidth="lg" fullWidth>
-              <DialogTitle>Add Faculty Account</DialogTitle>
-              <DialogContent>
-                <Grid container spacing={1}>
-                  <Grid item xs={12} sm={3}>
-                  <Typography variant="subtitle1" gutterBottom>
-                      Personal Info
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      label="Last Name"
-                      name="last_name"
-                      value={newFaculty.last_name}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="First Name"
-                      name="first_name"
-                      value={newFaculty.first_name}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="Middle Name"
-                      name="middle_name"
-                      value={newFaculty.middle_name}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <Autocomplete
-  options={colleges.map((college) => college.code)}
-  value={newFaculty.college || ''}
-  onChange={(event, newValue) => {
-    setNewFaculty((prev) => ({ ...prev, college: newValue || '', course: '' })); // reset course on college change
-    if (newValue) fetchCoursesByCollege(newValue);
-  }}
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      label="College"
-      margin="dense"
-      fullWidth
-    />
-  )}
-  freeSolo
-  disableClearable
-/>
-<Autocomplete
-  options={collegeCourses.map(code => code.toUpperCase())}
-  value={newFaculty.course || ''}
-  onChange={(event, newValue) => {
-    setNewFaculty((prev) => ({ ...prev, course: newValue || '' }));
-  }}
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      label="Course"
-      margin="dense"
-      fullWidth
-    />
-  )}
-  freeSolo
-  disableClearable={collegeCourses.length === 0}
-/>
+      <Dialog open={openModal} onClose={handleCloseModal} maxWidth="md" fullWidth>
+        <DialogTitle>Add Faculty Account</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} mt={1}>
+            {/* Personal Info */}
+            <Grid item xs={12} sm={5}>
+              <Typography variant="subtitle1" gutterBottom>
+                Personal Info
+              </Typography>
+              <TextField
+                fullWidth
+                label="Last Name"
+                name="last_name"
+                value={newFaculty.last_name}
+                onChange={handleInputChange}
+                margin="dense"
+              />
+              <TextField
+                fullWidth
+                label="First Name"
+                name="first_name"
+                value={newFaculty.first_name}
+                onChange={handleInputChange}
+                margin="dense"
+              />
+              <TextField
+                fullWidth
+                label="Middle Name"
+                name="middle_name"
+                value={newFaculty.middle_name}
+                onChange={handleInputChange}
+                margin="dense"
+              />
+              <TextField
+                fullWidth
+                label="Extension Name"
+                name="ext_name"
+                value={newFaculty.ext_name}
+                onChange={handleInputChange}
+                margin="dense"
+              />
+              <Autocomplete
+                options={colleges.map((college) => college.code)}
+                value={newFaculty.college || ''}
+                onChange={(event, newValue) => {
+                  setNewFaculty((prev) => ({ ...prev, college: newValue || '', course: '' }));
+                  if (newValue) fetchCoursesByCollege(newValue);
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="College" margin="dense" fullWidth />
+                )}
+                freeSolo
+                disableClearable
+              />
+            </Grid>
 
-                  </Grid>
-      
-                  <Grid item sm={1} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Divider orientation="vertical" flexItem />
-                  </Grid>
-      
-                  <Grid item xs={12} sm={3}>
-                  <Typography variant="subtitle1" gutterBottom>
-                      Account Credentials
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      label="Username"
-                      name="username"
-                      value={newFaculty.username}
-                      onChange={handleInputChange}
-                      margin="dense"
-                      InputProps={{ readOnly: true }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Email"
-                      name="email"
-                      value={newFaculty.email}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="Password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      value={newFaculty.password}
-                      onChange={handleInputChange}
-                      margin="dense"
-                      InputProps={{
-                        readOnly: true,
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton onClick={togglePasswordVisibility} edge="end">
-                              {showPassword ? <VisibilityOff /> : <Visibility />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                    <FormControl fullWidth margin="dense">
-                      <InputLabel>Role</InputLabel>
-                      <Select
-                        name="role"
-                        value={newFaculty.role}
-                        onChange={handleRoleChange}
-                        disabled
-                      >
-                        <MenuItem value="dean">Dean</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-      
-                  <Grid item sm={1} sx={{ display: 'flex', justifyContent: 'center' }}>
-                    <Divider orientation="vertical" flexItem />
-                  </Grid>
-      
-                  <Grid item xs={12} sm={3}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Optional
-                    </Typography>
-                    <TextField
-                      fullWidth
-                      label="Highest Educational Attainment"
-                      name="highestEducationalAttainment"
-                      value={newFaculty.highestEducationalAttainment}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="Academic Rank"
-                      name="academicRank"
-                      value={newFaculty.academicRank}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="Status of Appointment"
-                      name="statusOfAppointment"
-                      value={newFaculty.statusOfAppointment}
-                      onChange={handleInputChange}
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="Number of Preparations"
-                      type="number"
-                      inputProps={{ min: 0, step: "any" }}
-                      value={newFaculty.numberOfPrep}
-                      onChange={(e) =>
-                        setNewFaculty({
-                          ...newFaculty,
-                          numberOfPrep: parseFloat(e.target.value),
-                        })
-                      }
-                      margin="dense"
-                    />
-                    <TextField
-                      fullWidth
-                      label="Total Teaching Load"
-                      type="number"
-                      inputProps={{ min: 0, step: "any" }}
-                      value={newFaculty.totalTeachingLoad}
-                      onChange={(e) =>
-                        setNewFaculty({
-                          ...newFaculty,
-                          totalTeachingLoad: parseFloat(e.target.value),
-                        })
-                      }
-                      margin="dense"
-                    />
-                  </Grid>
-                </Grid>
-              </DialogContent>
-      
-              <DialogActions>
-                <Button onClick={() => handleCloseModal()}>Cancel</Button>
-                <Button onClick={handleAddAccount} variant="contained" color="primary">
-                  Add
-                </Button>
-              </DialogActions>
-            </Dialog>
+            {/* Divider */}
+            <Grid
+              item
+              xs={12}
+              sm={2}
+              sx={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}
+            >
+              <Divider orientation="vertical" flexItem />
+            </Grid>
+
+            {/* Account Credentials */}
+            <Grid item xs={12} sm={5}>
+              <Typography variant="subtitle1" gutterBottom>
+                Account Credentials
+              </Typography>
+              <TextField
+                fullWidth
+                label="Username"
+                name="username"
+                value={newFaculty.username}
+                onChange={handleInputChange}
+                margin="dense"
+                InputProps={{ readOnly: true }}
+              />
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                value={newFaculty.email}
+                onChange={handleInputChange}
+                margin="dense"
+              />
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={newFaculty.password}
+                onChange={handleInputChange}
+                margin="dense"
+                InputProps={{
+                  readOnly: true,
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={togglePasswordVisibility} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <FormControl fullWidth margin="dense">
+                <InputLabel>Role</InputLabel>
+                <Select
+                  name="role"
+                  value={newFaculty.role}
+                  onChange={handleRoleChange}
+                  disabled
+                >
+                  <MenuItem value="dean">Dean</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={handleAddAccount} variant="contained" color="primary">
+            Add
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </SuperadminMain>
   );
 };
