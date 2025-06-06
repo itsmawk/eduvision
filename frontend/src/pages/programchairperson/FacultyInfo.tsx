@@ -33,7 +33,8 @@ import {
   InputLabel,
   SelectChangeEvent,
   Divider,
-  Menu
+  Menu,
+  Chip
 } from "@mui/material";
 import InfoModal from '../../components/InfoModal';
 import BlockIcon from '@mui/icons-material/Block';
@@ -293,17 +294,26 @@ const FacultyInfo: React.FC = () => {
 
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <TableContainer component={Paper} sx={{ width: "100%" }}>
+          <TableContainer component={Paper} sx={{
+            width: "100%",
+            borderRadius: 2,
+            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.05)",
+          }}>
             <Table>
-              <TableHead>
+              <TableHead sx={{ backgroundColor: "#F5F3F4" }}>
                 <TableRow>
                   <TableCell><strong>Full Name</strong></TableCell>
                   <TableCell><strong>Email</strong></TableCell>
                   <TableCell><strong>Username</strong></TableCell>
                   <TableCell>
-                    <Box display="flex" alignItems="center">
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      sx={{ cursor: 'pointer' }}
+                      onClick={handleStatusClick}
+                    >
                       <strong>Status of Account</strong>
-                      <IconButton onClick={handleStatusClick} size="small">
+                      <IconButton size="small" sx={{ ml: 0.5, p: 0 }}>
                         <ArrowDropDownIcon fontSize="small" />
                       </IconButton>
                     </Box>
@@ -312,21 +322,13 @@ const FacultyInfo: React.FC = () => {
                       open={statusMenuOpen}
                       onClose={handleStatusClose}
                     >
-                      <MenuItem onClick={() => handleStatusSelect('all')}>
-                        All
-                      </MenuItem>
-                      <MenuItem onClick={() => handleStatusSelect('active')}>
-                        Active
-                      </MenuItem>
-                      <MenuItem onClick={() => handleStatusSelect('inactive')}>
-                        Inactive
-                      </MenuItem>
-                      <MenuItem onClick={() => handleStatusSelect('forverification')}>
-                        For Verification
-                      </MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('all')}>All</MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('active')}>Active</MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('inactive')}>Inactive</MenuItem>
+                      <MenuItem onClick={() => handleStatusSelect('forverification')}>For Verification</MenuItem>
                     </Menu>
                   </TableCell>
-                  <TableCell><strong>View More</strong></TableCell>
+                  <TableCell><strong></strong></TableCell>
                   <TableCell><strong>Action</strong></TableCell>
                 </TableRow>
               </TableHead>
@@ -336,18 +338,31 @@ const FacultyInfo: React.FC = () => {
                     key={faculty._id}
                     onClick={() => handleOpenInfoModal(faculty)}
                     sx={{
-                      backgroundColor: selectedFaculty === faculty._id ? "#e0f7fa" : "transparent",
+                      backgroundColor: selectedFaculty === faculty._id ? "#E3F2FD" : "transparent",
                       cursor: "pointer",
-                      "&:hover": { backgroundColor: "#f1f1f1" },
+                      "&:hover": { backgroundColor: "#FAFAFA" },
                     }}
                   >
                     <TableCell>{`${faculty.last_name}, ${faculty.first_name} ${faculty.middle_name || ""}`}</TableCell>
                     <TableCell>{faculty.email}</TableCell>
                     <TableCell>{faculty.username}</TableCell>
                     <TableCell>
-                      {faculty.status === "forverification"
-                        ? "For Verification"
-                        : faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)}
+                      <Chip
+                        label={
+                          faculty.status === "forverification"
+                            ? "For Verification"
+                            : faculty.status.charAt(0).toUpperCase() + faculty.status.slice(1)
+                        }
+                        color={
+                          faculty.status === "active"
+                            ? "success"
+                            : faculty.status === "inactive"
+                            ? "default"
+                            : "warning"
+                        }
+                        size="small"
+                        variant="outlined"
+                      />
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <IconButton color="primary" onClick={() => handleOpenInfoModal(faculty)}>
@@ -365,6 +380,7 @@ const FacultyInfo: React.FC = () => {
                         color="warning"
                         onClick={(e) => {
                           e.stopPropagation();
+                          // Optional: Block functionality
                         }}
                       >
                         <BlockIcon />

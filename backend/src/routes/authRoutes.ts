@@ -383,51 +383,7 @@ router.get("/logs/all-faculties/today", async (req: Request, res: Response): Pro
 
 
 
-// LOGIN ROUTE
-router.post("/login", async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { username, password } = req.body;
 
-    const user = await UserModel.findOne({ username })
-      .populate("college", "name code")
-      .exec();
-
-    if (!user) {
-      res.status(401).json({ message: "Invalid credentials" });
-      return;
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      res.status(401).json({ message: "Invalid credentials" });
-      return;
-    }
-
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET as string,
-      { expiresIn: "1h" }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        role: user.role,
-        first_name: user.first_name,
-        middle_name: user.middle_name,
-        last_name: user.last_name,
-        status: user.status,
-        college: user.college,
-        course: user.course || null,
-      },
-      requiresUpdate: user.status === "forverification",
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
 
 
 // GET FACULTY LIST

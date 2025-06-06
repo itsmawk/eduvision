@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import SignUp from "./pages/Signup";
 import Login from "./pages/Login";
 {/* for programchairperson*/}
 import AdminMain from "./pages/programchairperson/AdminMain";
@@ -34,7 +33,6 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
 
         <Route path="/update-credentials/:id" element={<UpdateCredentials />} />
