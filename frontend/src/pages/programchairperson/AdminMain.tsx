@@ -5,7 +5,7 @@ import {
   CssBaseline, Box, Toolbar, Typography, Divider
 } from "@mui/material";
 import {
-  Dashboard, People, Videocam, Assessment
+  Dashboard, People, Videocam, Assessment, PendingActions
 } from "@mui/icons-material";
 import AdminHeader from "../../components/AdminHeader";
 
@@ -20,6 +20,7 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
     { text: "Faculty Info", icon: <People />, path: "/faculty-info/:id" },
+    { text: "Pending Faculty", icon: <PendingActions />, path: "/pending-faculty/:id" },
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
     { text: "Generate Reports", icon: <Assessment />, path: "/faculty-reports/:id" },
   ];

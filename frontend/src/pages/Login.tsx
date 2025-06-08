@@ -301,7 +301,7 @@ export default function AuthPage() {
     setLoading(true);
     try {
       const res = await axios.post("http://localhost:5000/api/loginsignup/login", credentials);
-      const { token, user, requiresUpdate } = res.data;
+      const { token, user, requiresUpdate, requiresCompletion } = res.data;
 
       localStorage.setItem("token", token);
       localStorage.setItem("userId", user.id);
@@ -317,7 +317,9 @@ export default function AuthPage() {
 
       if (requiresUpdate) {
         navigate(`/update-credentials/${user.id}`);
-      } else if (user.role?.toLowerCase() === "superadmin") {
+      } else if (requiresCompletion) {
+        navigate(`/requires-completion/${user.id}`);
+      }else if (user.role?.toLowerCase() === "superadmin") {
         navigate(`/superadmin-dashboard/${user.id}`);
       } else if (user.role?.toLowerCase() === "dean") {
         navigate(`/dean-dashboard/${user.id}`);
@@ -506,7 +508,7 @@ export default function AuthPage() {
                       >
                         <MenuItem value="dean">Dean</MenuItem>
                         <MenuItem value="programchairperson">Program Chairperson</MenuItem>
-                        <MenuItem value="faculty">Faculty</MenuItem>
+                        <MenuItem value="instructor">Instructor</MenuItem>
                       </TextField>
                       <Box display="flex" gap={2} sx={{ mb: 1 }}>
                         <FormControl fullWidth sx={{ mb: 1 }}>
@@ -634,8 +636,8 @@ export default function AuthPage() {
                         Please enter your credentials to sign in
                       </Typography>
                       <TextField
-                        label="Username"
-                        name="username"
+                        label="Email or Username"
+                        name="usernameOrEmail"
                         fullWidth
                         margin="normal"
                         variant="outlined"

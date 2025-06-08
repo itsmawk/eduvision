@@ -107,22 +107,14 @@ router.post("/signup", upload.single("photo"), async (req: Request, res: Respons
       return;
     }
 
-    console.log("📧 Email:", email);
-    console.log("🎓 Role:", role);
-    console.log("🏢 Department code:", department);
-    console.log("📚 Program code:", program);
-    console.log("🖼️ Cloudinary URL:", photo.path);
-
     const photoUrl = photo.path;
 
-    // 🔍 Find College by department code
     const collegeDoc = await College.findOne({ code: department });
     if (!collegeDoc) {
       res.status(400).json({ success: false, message: `No college found with code '${department}'` });
       return;
     }
 
-    // 🔍 Find Course by program code (unless role is dean)
     let courseDoc = null;
     if (role !== "dean") {
       courseDoc = await Course.findOne({ code: program });
@@ -132,7 +124,6 @@ router.post("/signup", upload.single("photo"), async (req: Request, res: Respons
       }
     }
 
-    // ✅ Create TempAccount
     const tempAccount = new TempAccount({
       email,
       role,
@@ -197,52 +188,91 @@ router.post("/check-temp-account", async (req: Request, res: Response) => {
 });
 
 
-
 // LOGIN ROUTE
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, password } = req.body;
+    const { usernameOrEmail, password } = req.body;
 
-    const user = await UserModel.findOne({ username })
-      .populate("college", "name code")
-      .exec();
+    // 1. Try to find user in UserModel
+    const user = await UserModel.findOne({
+      $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }],
+    });
 
-    if (!user) {
+    if (user) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        res.status(401).json({ message: "Invalid credentials" });
+        return;
+      }
+
+      const token = jwt.sign(
+        { id: user._id, role: user.role },
+        process.env.JWT_SECRET as string,
+        { expiresIn: "1h" }
+      );
+
+      res.json({
+        token,
+        user: {
+          id: user._id,
+          role: user.role,
+          first_name: user.first_name,
+          middle_name: user.middle_name,
+          last_name: user.last_name,
+          status: user.status,
+          college: user.college,
+          course: user.course || null,
+        },
+        requiresUpdate: user.status === "forverification",
+      });
+      return;
+    }
+
+    // 2. Check TempAccount if not found in UserModel
+    const tempAcc = await TempAccount.findOne({ email: usernameOrEmail });
+
+    if (
+      !tempAcc ||
+      !tempAcc.tempPassword ||
+      tempAcc.signUpStatus !== "accepted_needs_completion"
+    ) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    const isTempPasswordMatch = await bcrypt.compare(password, tempAcc.tempPassword);
+    if (!isTempPasswordMatch) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
+    const tempToken = jwt.sign(
+      { id: tempAcc._id, role: tempAcc.role },
       process.env.JWT_SECRET as string,
       { expiresIn: "1h" }
     );
 
     res.json({
-      token,
+      token: tempToken,
       user: {
-        id: user._id,
-        role: user.role,
-        first_name: user.first_name,
-        middle_name: user.middle_name,
-        last_name: user.last_name,
-        status: user.status,
-        college: user.college,
-        course: user.course || null,
+        id: tempAcc._id,
+        role: tempAcc.role,
+        email: tempAcc.email,
+        signUpStatus: tempAcc.signUpStatus,
+        department: tempAcc.department,
+        program: tempAcc.program || null,
+        profilePhoto: tempAcc.profilePhoto,
+        dateSignedUp: tempAcc.dateSignedUp,
       },
-      requiresUpdate: user.status === "forverification",
+      requiresCompletion: tempAcc.signUpStatus === "accepted_needs_completion",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
 
 // ✅ GET ALL COLLEGES
 router.get("/colleges", async (req: Request, res: Response) => {
