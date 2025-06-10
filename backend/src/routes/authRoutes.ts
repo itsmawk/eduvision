@@ -19,6 +19,8 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { ILog } from "../models/AttendanceLogs";
 import nodemailer from "nodemailer";
+import TempAccount from "../models/TempAccount";
+import Course from "../models/Course"
 
 
 dotenv.config();
@@ -34,6 +36,72 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+<<<<<<< HEAD
+=======
+const generateRandomPassword = () => {
+  return Math.floor(1000 + Math.random() * 9000).toString(); // e.g. "8342"
+};
+
+router.get('/all-semester', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const semesters = await Semester.find({}, { _id: 0 }).sort({ academicYear: -1 });
+    res.status(200).json(semesters);
+  } catch (error) {
+    console.error('Error fetching semesters:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get("/user/name", async (req: Request, res: Response): Promise<void> => {
+  const userId = req.query.name as string;
+
+  try {
+    if (!userId) {
+      res.status(400).json({ error: "User ID is required." });
+      return;
+    }
+
+    const user = await UserModel.findById(userId).select("last_name first_name middle_name");
+
+    if (!user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    res.status(200).json({
+      last_name: user.last_name,
+      first_name: user.first_name,
+      middle_name: user.middle_name,
+    });
+  } catch (error) {
+    console.error("Error fetching user name:", error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+
+
+router.get('/logs/today', async (req, res) => {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`; // Format: YYYY-MM-DD
+
+    const logs = await Log.find({ date: today })
+      .populate('schedule')
+      .populate('college');
+
+    res.status(200).json(logs);
+  } catch (error) {
+    console.error("Error fetching today's logs:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+>>>>>>> 6d424866abecb76ae57bd22063767d8cf80f0064
 
 router.post("/generate-daily-report", async (req: Request, res: Response) => {
   try {
@@ -390,6 +458,117 @@ router.get("/faculty", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// GET INITIAL SIGNED UP FACULTY LIST
+router.get("/initial-faculty", async (req: Request, res: Response): Promise<void> => {
+  const { courseName } = req.query;
+
+  if (!courseName) {
+    res.status(400).json({ message: "courseName is missing" });
+    return;
+  }
+
+  try {
+    const course = await Course.findOne({ code: courseName });
+    if (!course) {
+      res.status(404).json({ message: "Course not found" });
+      return;
+    }
+
+    const facultyList = await TempAccount.find({
+      signUpStatus: "for_approval",
+      role: "instructor",
+      program: course._id,
+    }).populate("department program");
+
+    res.json(facultyList);
+  } catch (error) {
+    console.error("Error fetching faculty by course:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.put("/approve-faculty/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    const faculty = await TempAccount.findById(id);
+    if (!faculty) {
+      res.status(404).json({ message: "Faculty not found" });
+      return;
+    }
+
+    const randomPassword = generateRandomPassword();
+
+    // Hash the random password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(randomPassword, saltRounds);
+
+    // Update status and save hashed password
+    faculty.signUpStatus = "accepted_needs_completion";
+    faculty.tempPassword = hashedPassword;
+    await faculty.save();
+
+    // Send email
+    const mailOptions = {
+      from: `"EduVision Admin" <${process.env.EMAIL_USER}>`,
+      to: faculty.email,
+      subject: "Account Approved - EduVision",
+      html: `
+        <h2>Your account has been approved!</h2>
+        <p>Welcome to EduVision! Your temporary login credentials are below:</p>
+        <ul>
+          <li><strong>Email:</strong> ${faculty.email}</li>
+          <li><strong>Temporary Password:</strong> ${randomPassword}</li>
+        </ul>
+        <p>Please log in and complete your account setup as soon as possible.</p>
+        <br/>
+        <p>Thank you,<br/>EduVision Team</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "Faculty approved and email sent", password: randomPassword });
+  } catch (error) {
+    console.error("Error in approve-faculty:", error);
+    res.status(500).json({ message: "Server error while approving faculty" });
+  }
+});
+
+router.put("/reject-faculty/:id", async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const faculty = await TempAccount.findById(id);
+    if (!faculty) {
+      res.status(404).json({ message: "Faculty not found" });
+      return;
+    }
+
+    faculty.signUpStatus = "approval_declined";
+    await faculty.save();
+
+    const mailOptions = {
+      from: `"EduVision Admin" <${process.env.EMAIL_USER}>`,
+      to: faculty.email,
+      subject: "Account Rejected - EduVision",
+      html: `
+        <h2>Account Rejected</h2>
+        <p>We're sorry to inform you that your EduVision account request has been rejected.</p>
+        <p>If you believe this was a mistake, please contact the administration.</p>
+        <br/>
+        <p>Thank you,<br/>EduVision Team</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "Faculty rejected and email sent." });
+  } catch (error) {
+    console.error("Error rejecting faculty:", error);
+    res.status(500).json({ message: "Server error while rejecting faculty" });
+  }
+});
 
 
 // DELETE FACULTY ACCOUNT

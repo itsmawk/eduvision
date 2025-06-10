@@ -5,7 +5,11 @@ import {
   CssBaseline, Box, Toolbar, Typography, Divider, AppBar, IconButton
 } from "@mui/material";
 import {
+<<<<<<< HEAD
   Dashboard, People, Videocam, CalendarToday, Assessment, Logout
+=======
+  Dashboard, People, Videocam, Assessment, PendingActions
+>>>>>>> 6d424866abecb76ae57bd22063767d8cf80f0064
 } from "@mui/icons-material";
 import Swal from "sweetalert2";
 
@@ -35,7 +39,11 @@ const AdminMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Dashboard />, path: "/dashboard/:id" },
     { text: "Faculty Info", icon: <People />, path: "/faculty-info/:id" },
+<<<<<<< HEAD
     { text: "Schedule", icon: <CalendarToday />, path: "/schedule/:id" },
+=======
+    { text: "Pending Faculty", icon: <PendingActions />, path: "/pending-faculty/:id" },
+>>>>>>> 6d424866abecb76ae57bd22063767d8cf80f0064
     { text: "Live Video", icon: <Videocam />, path: "/live-video/:id" },
     { text: "Generate Reports", icon: <Assessment />, path: "/faculty-reports/:id" },
   ];

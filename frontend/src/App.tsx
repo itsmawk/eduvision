@@ -1,14 +1,16 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import SignUp from "./pages/Signup";
 import Login from "./pages/Login";
+import RequiresCompletion from "./pages/RequiresCompletion";
 {/* for programchairperson*/}
 import AdminMain from "./pages/programchairperson/AdminMain";
 import Dashboard from "./pages/programchairperson/Dashboard";
 import FacultyInfo from "./pages/programchairperson/FacultyInfo";
 import LiveVideo from "./pages/programchairperson/LiveVideo";
-import Schedule from "./pages/programchairperson/Schedule";
 import UserMain from "./pages/user/UserMain";
 import FacultyReports from "./pages/programchairperson/FacultyReports";
+import PendingFaculty from "./pages/programchairperson/PendingFaculty";
+
 {/* for faculty*/}
 import UpdateCredentials from "./pages/user/UpdateCredentials";
 import FacultyDashboard from "./pages/user/FacultyDashboard";
@@ -32,6 +34,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
 
         <Route path="/update-credentials/:id" element={<UpdateCredentials />} />
+        <Route path="/requires-completion/:id" element={<RequiresCompletion />} />
 
         {/* Superadmin Routes */}
         <Route
@@ -115,19 +118,19 @@ export default function App() {
         />
 
         <Route
-          path="/live-video/:id"
+          path="/pending-faculty/:id"
           element={
             <AdminMain>
-              <LiveVideo />
+              <PendingFaculty />
             </AdminMain>
           }
         />
 
         <Route
-          path="/schedule/:id"
+          path="/live-video/:id"
           element={
             <AdminMain>
-              <Schedule />
+              <LiveVideo />
             </AdminMain>
           }
         />
